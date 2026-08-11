@@ -403,8 +403,7 @@
 
     <!-- ③ Pair Correlation -->
     <div class="tab-panel" id="panel-pairs">
-      <p class="panel-subtitle">Top 20 white ball pairs most frequently appearing in the same draw</p>
-      <div class="chart-container"><svg id="pairs-svg" class="chart-svg"></svg></div>
+      <div id="pairs-content"></div>
     </div>
 
     <!-- ④ Gap Analysis -->
@@ -875,23 +874,94 @@ function renderBallRow(containerId, entries, hot, isPb) {
 }
 
 // ── ③ Pair Correlation ────────────────────────────────────────────────────
+// Returns all r-length sub-arrays of arr (combinations, not permutations)
+function getCombinations(arr, r) {
+  const result = [];
+  (function pick(start, combo) {
+    if (combo.length === r) { result.push(combo.slice()); return; }
+    for (let i = start; i < arr.length; i++) {
+      combo.push(arr[i]);
+      pick(i + 1, combo);
+      combo.pop();
+    }
+  })(0, []);
+  return result;
+}
+
+function hexToRgb(hex) {
+  return [1,3,5].map(o => parseInt(hex.slice(o,o+2),16)).join(',');
+}
+
 function renderPairCorrelation(draws) {
-  const pairC = {};
-  draws.forEach(d => {
-    const s = [...d.wb].sort((a,b)=>a-b);
-    for (let i=0;i<s.length;i++)
-      for (let j=i+1;j<s.length;j++) {
-        const k = `${s[i]}–${s[j]}`;
-        pairC[k] = (pairC[k]||0)+1;
-      }
+  const content = document.getElementById('pairs-content');
+  content.innerHTML = '';
+
+  const SECTIONS = [
+    { r:2, title:'2-Ball Pairs',                     icon:'🔗', color:'#e52b36', topN:20,  labelW:72,  minCount:1 },
+    { r:3, title:'3-Ball Triplets',                  icon:'🔺', color:'#8b5cf6', topN:15,  labelW:110, minCount:1 },
+    { r:4, title:'4-Ball Quads',                     icon:'🔷', color:'#3b82f6', topN:10,  labelW:148, minCount:2 },
+    { r:5, title:'5-Ball Quintets (exact repeats)',   icon:'⭐', color:'#10b981', topN:999, labelW:186, minCount:2 },
+  ];
+
+  SECTIONS.forEach(({ r, title, icon, color, topN, labelW, minCount }, idx) => {
+    // Count every r-combination of white balls across all draws
+    const comboC = {};
+    draws.forEach(d => {
+      const s = [...d.wb].sort((a,b)=>a-b);
+      getCombinations(s, r).forEach(combo => {
+        const k = combo.join('–');
+        comboC[k] = (comboC[k]||0)+1;
+      });
+    });
+
+    const entries = Object.entries(comboC)
+      .filter(([,v]) => v >= minCount)
+      .sort((a,b)=>b[1]-a[1])
+      .slice(0, topN);
+
+    // Divider between sections
+    if (idx > 0) {
+      const hr = document.createElement('hr');
+      hr.style.cssText = 'border:none;border-top:1px solid rgba(255,255,255,.08);margin:20px 0';
+      content.appendChild(hr);
+    }
+
+    // Section header
+    const sub = document.createElement('p');
+    sub.className = 'panel-subtitle';
+    content.appendChild(sub);
+
+    if (entries.length === 0) {
+      const minLabel = minCount > 1 ? ` appearing ≥${minCount}× across ${draws.length} draws` : '';
+      sub.textContent = `${icon} ${title}`;
+      const msg = document.createElement('p');
+      msg.style.cssText = 'color:#9ca3af;font-size:0.85rem;margin:6px 0 0';
+      msg.textContent = r === 5
+        ? `No exact 5-ball repeat draws found in ${draws.length} draws — statistically expected.`
+        : `No ${r}-ball combinations repeated${minLabel}.`;
+      content.appendChild(msg);
+      return;
+    }
+
+    sub.textContent = `${icon} ${title} — showing top ${entries.length}`;
+
+    const svgId = `pairs-svg-r${r}`;
+    const chartDiv = document.createElement('div');
+    chartDiv.className = 'chart-container';
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.id = svgId;
+    svg.className = 'chart-svg';
+    chartDiv.appendChild(svg);
+    content.appendChild(chartDiv);
+
+    const maxV = entries[0][1];
+    const rgb  = hexToRgb(color);
+    drawHorizBarChart(svgId, entries.map(([label, val]) => ({
+      label, val,
+      fill: `rgba(${rgb},${(0.35 + val/maxV*0.65).toFixed(2)})`,
+      tip: `<strong>${label}</strong> appeared together <strong>${val}</strong> time${val!==1?'s':''}`
+    })), { labelW });
   });
-  const top20 = Object.entries(pairC).sort((a,b)=>b[1]-a[1]).slice(0,20);
-  const maxV  = top20[0]?.[1] || 1;
-  drawHorizBarChart('pairs-svg', top20.map(([label, val]) => ({
-    label, val,
-    fill: `rgba(229,43,54,${(0.35 + val/maxV*0.65).toFixed(2)})`,
-    tip: `Pair <strong>${label}</strong> appeared together <strong>${val}</strong> time${val!==1?'s':''}`
-  })), { labelW: 72 });
 }
 
 // ── ④ Gap Analysis ────────────────────────────────────────────────────────
