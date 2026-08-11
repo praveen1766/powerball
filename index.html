@@ -3,22 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ultimate Powerball Interactive Graph</title>
+<title>Powerball Analytics — Interactive Draw Visualizer</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
   *, *::before, *::after { box-sizing: border-box; }
 
   body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background-color: #f0f2f5;
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: #f0f2f5;
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 30px 20px 60px;
+    padding: 30px 16px 80px;
     margin: 0;
   }
-
   h1 {
     color: #1a1a2e;
     margin-bottom: 4px;
@@ -28,11 +26,30 @@
   }
   p.subtitle {
     color: #6b7280;
-    margin-bottom: 24px;
+    margin-bottom: 16px;
     text-align: center;
-    font-size: 0.95rem;
+    font-size: 0.92rem;
   }
 
+  /* Stats bar */
+  .stats-bar {
+    display: flex;
+    align-items: center;
+    background: #1a1a2e;
+    color: rgba(255,255,255,0.85);
+    border-radius: 10px;
+    padding: 10px 22px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px;
+  }
+  .stat-val  { color: #fbbf24; font-weight: 700; }
+  .stat-sep  { opacity: 0.2; padding: 0 10px; }
+
+  /* Controls */
   .controls {
     display: flex;
     flex-wrap: wrap;
@@ -52,7 +69,7 @@
     font-size: 15px;
     font-family: inherit;
     cursor: pointer;
-    max-width: 280px;
+    max-width: 290px;
     color: #374151;
     background: #f9fafb;
     transition: border-color 0.2s;
@@ -71,17 +88,16 @@
     font-weight: 600;
     transition: background 0.2s, transform 0.1s;
   }
-  button:hover { background: #c2212b; transform: translateY(-1px); }
-  button:active { transform: translateY(0); }
+  button:hover  { background: #c2212b; transform: translateY(-1px); }
+  button:active { transform: none; }
   button:disabled { background: #d1d5db; cursor: not-allowed; transform: none; }
-
   #mapAllBtn { background: #1a1a2e; }
   #mapAllBtn:hover { background: #0d0d1a; }
   #mapAllBtn.active { background: #e52b36; }
   #mapAllBtn.active:hover { background: #c2212b; }
 
   .date-range-display {
-    font-size: 1rem;
+    font-size: 0.92rem;
     font-weight: 600;
     color: #374151;
     margin-bottom: 20px;
@@ -93,12 +109,8 @@
     border-left: 4px solid #e52b36;
   }
 
-  .grids-wrapper {
-    display: flex;
-    gap: 30px;
-    flex-wrap: wrap;
-    justify-content: center;
-  }
+  /* Grids */
+  .grids-wrapper { display: flex; gap: 30px; flex-wrap: wrap; justify-content: center; }
   .grid-box {
     background: white;
     padding: 25px;
@@ -107,19 +119,15 @@
   }
   .grid-header {
     text-align: center;
-    font-size: 1.1rem;
+    font-size: 1.05rem;
     font-weight: 700;
     color: white;
     background: linear-gradient(135deg, #e52b36, #c2212b);
     padding: 12px;
     border-radius: 10px 10px 0 0;
     margin: -25px -25px 20px -25px;
-    letter-spacing: 0.3px;
   }
-  .grid-wrapper {
-    position: relative;
-    display: inline-block;
-  }
+  .grid-wrapper { position: relative; display: inline-block; }
   .grid {
     display: grid;
     gap: 1px;
@@ -129,133 +137,191 @@
   }
   .white-balls { grid-template-columns: repeat(7, 45px); }
   .power-balls { grid-template-columns: repeat(5, 45px); }
-
   .cell {
-    width: 45px;
-    height: 45px;
+    width: 45px; height: 45px;
     background: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    font-weight: 500;
-    color: #6b7280;
-    position: relative;
-    z-index: 2;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 500; color: #6b7280;
+    position: relative; z-index: 2;
     transition: all 0.25s ease;
     border-radius: 2px;
+    cursor: pointer;
   }
+  .cell:hover { background: #fef2f2; color: #e52b36; }
   .cell.active {
-    background-color: #e52b36;
-    color: white;
-    font-weight: 700;
-    border-radius: 50%;
-    transform: scale(0.85);
-    box-shadow: 0 4px 12px rgba(229, 43, 54, 0.45);
+    background-color: #e52b36; color: white; font-weight: 700;
+    border-radius: 50%; transform: scale(0.85);
+    box-shadow: 0 4px 12px rgba(229,43,54,0.45);
   }
-
   svg.lines-svg {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    z-index: 10;
+    position: absolute; top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none; z-index: 10;
   }
 
-  .loading {
-    font-weight: 600;
-    color: #e52b36;
-    margin-bottom: 12px;
-    text-align: center;
-    font-size: 0.95rem;
-  }
+  .loading { font-weight: 600; color: #e52b36; margin-bottom: 12px; text-align: center; font-size: 0.95rem; }
   .warning { color: #059669; }
 
-  /* ── Frequency Chart ──────────────────────────────── */
-  .chart-section {
+  /* ── Analytics section ───────────────────────────────────────── */
+  .analytics-wrapper {
     width: 100%;
     max-width: 960px;
     margin-top: 30px;
     background: white;
-    padding: 25px;
     border-radius: 16px;
     box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+    overflow: hidden;
   }
-  .chart-header {
-    text-align: center;
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: white;
+  .analytics-header {
     background: linear-gradient(135deg, #1a1a2e, #2d2d4e);
-    padding: 12px;
-    border-radius: 10px 10px 0 0;
-    margin: -25px -25px 22px -25px;
-    letter-spacing: 0.3px;
+    padding: 14px 18px 12px;
   }
-  .chart-subtitle {
-    font-size: 0.78rem;
+  .analytics-title {
+    color: rgba(255,255,255,0.5);
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    margin-bottom: 10px;
+  }
+
+  /* Tabs */
+  .tab-bar {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+  }
+  .tab-bar::-webkit-scrollbar { display: none; }
+  .tab-btn {
+    padding: 7px 14px;
+    border: none;
+    background: rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.6);
+    border-radius: 20px;
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+    font-weight: 600;
+    white-space: nowrap;
+    transition: all 0.2s;
+  }
+  .tab-btn:hover { background: rgba(255,255,255,0.2); color: white; transform: none; }
+  .tab-btn.active { background: #e52b36; color: white; }
+
+  /* Panels */
+  .tab-panels { padding: 22px; }
+  .tab-panel  { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* Shared panel styles */
+  .panel-subtitle {
+    font-size: 0.72rem;
     font-weight: 700;
     color: #9ca3af;
-    margin: 0 0 8px 0;
     text-transform: uppercase;
     letter-spacing: 1px;
+    margin: 0 0 8px;
   }
+  .panel-section  { margin-bottom: 26px; }
+  .panel-row      { display: flex; gap: 24px; flex-wrap: wrap; }
+  .panel-col      { flex: 1; min-width: 180px; }
   .chart-container { overflow-x: auto; }
-  .chart-svg { display: block; }
+  .chart-svg      { display: block; }
+  .chart-divider  { border: none; border-top: 1px solid #f3f4f6; margin: 20px 0; }
 
-  .chart-divider {
-    border: none;
-    border-top: 1px solid #f3f4f6;
-    margin: 20px 0;
+  /* Ball pills */
+  .ball-row { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0 18px; }
+  .ball-pill {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    font-weight: 700; font-size: 15px; color: white;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+    cursor: default; gap: 1px;
+  }
+  .ball-pill .pill-num   { line-height: 1.1; }
+  .ball-pill .pill-count { font-size: 9px; opacity: 0.85; }
+
+  /* Hot & Cold lookback */
+  .lookback-control {
+    display: flex; align-items: center;
+    gap: 10px; margin-bottom: 18px;
+    font-size: 0.85rem; color: #6b7280;
+  }
+  .lookback-control select {
+    padding: 5px 10px;
+    border-radius: 6px;
+    border: 1.5px solid #e5e7eb;
+    font-size: 13px; font-family: inherit;
+    cursor: pointer; color: #374151; background: #f9fafb;
   }
 
-  .chart-legend {
-    display: flex;
-    gap: 20px;
-    justify-content: flex-end;
-    margin-bottom: 10px;
-    font-size: 0.78rem;
-    color: #6b7280;
+  /* Trend controls */
+  .trend-controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+  .number-picker  {
+    display: flex; align-items: center; gap: 10px;
+    background: #f9fafb; border: 1.5px solid #e5e7eb;
+    border-radius: 10px; padding: 6px 14px;
   }
-  .legend-dot {
-    display: inline-block;
-    width: 10px;
-    height: 10px;
-    border-radius: 2px;
-    margin-right: 5px;
-    vertical-align: middle;
+  .number-picker button {
+    padding: 2px 10px; background: #e5e7eb; color: #374151;
+    border-radius: 6px; font-size: 15px; font-weight: 700;
+    min-width: 30px; transform: none;
   }
+  .number-picker button:hover { background: #d1d5db; transform: none; }
+  .picker-display {
+    font-size: 1.5rem; font-weight: 700; color: #1a1a2e;
+    min-width: 40px; text-align: center;
+  }
+  .trend-type-btns { display: flex; gap: 6px; }
+  .trend-type-btn {
+    padding: 7px 14px; background: #f3f4f6; color: #6b7280;
+    border-radius: 8px; font-size: 13px; font-weight: 600;
+  }
+  .trend-type-btn.active { background: #1a1a2e; color: white; }
+  .trend-hint { font-size: 0.78rem; color: #9ca3af; font-style: italic; }
+
+  /* Legend */
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 0.78rem; color: #6b7280; margin-bottom: 12px; }
+  .legend-dot  { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: middle; }
+  .legend-line { display: inline-block; width: 24px; height: 3px; border-radius: 2px; margin-right: 5px; vertical-align: middle; }
 
   /* Tooltip */
   #chart-tooltip {
     position: fixed;
-    background: rgba(15, 15, 30, 0.9);
-    color: white;
-    padding: 7px 13px;
-    border-radius: 8px;
-    font-size: 13px;
-    font-family: inherit;
-    pointer-events: none;
-    display: none;
-    z-index: 1000;
+    background: rgba(15,15,30,0.92);
+    color: white; padding: 7px 13px;
+    border-radius: 8px; font-size: 13px;
+    font-family: inherit; pointer-events: none;
+    display: none; z-index: 1000;
     white-space: nowrap;
     box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    line-height: 1.6;
   }
 </style>
 </head>
 <body>
 
-<h1>Powerball Draw Graph</h1>
-<p class="subtitle">Visualizing historical Powerball trends and patterns</p>
+<h1>Powerball Analytics</h1>
+<p class="subtitle">Interactive visualizer with historical pattern analysis</p>
 
-<div id="loadingMsg" class="loading">Fetching maximum historical data from official databases…</div>
+<div id="stats-bar" class="stats-bar" style="display:none;">
+  <span><span class="stat-val" id="stat-draws">—</span> draws</span>
+  <span class="stat-sep">|</span>
+  <span id="stat-range">—</span>
+  <span class="stat-sep">|</span>
+  <span>Current format · 5 of 69 + PB 1–26</span>
+</div>
+
+<div id="loadingMsg" class="loading">Fetching historical Powerball data…</div>
 
 <div class="controls">
-  <button id="olderBtn" disabled>&laquo; Older</button>
-  <select id="drawSelect" disabled><option>Loading data…</option></select>
-  <button id="newerBtn" disabled>Newer &raquo;</button>
+  <button id="olderBtn" disabled>« Older</button>
+  <select id="drawSelect" disabled><option>Loading…</option></select>
+  <button id="newerBtn" disabled>Newer »</button>
   <button id="mapAllBtn" disabled>Map All Draws</button>
 </div>
 
@@ -269,7 +335,6 @@
       <div class="grid white-balls" id="wb-grid"></div>
     </div>
   </div>
-
   <div class="grid-box">
     <div class="grid-header">Powerball (1 – 26)</div>
     <div class="grid-wrapper">
@@ -278,73 +343,219 @@
   </div>
 </div>
 
-<!-- Frequency Chart Section -->
-<div class="chart-section" id="chart-section" style="display:none;">
-  <div class="chart-header" id="chart-header">Number Frequency</div>
-
-  <div class="chart-legend">
-    <span><span class="legend-dot" style="background:#d1d5db;"></span>Not in draw</span>
-    <span><span class="legend-dot" style="background:#e52b36;"></span>White Ball (current draw)</span>
-    <span><span class="legend-dot" style="background:#f59e0b;"></span>Powerball (current draw)</span>
+<!-- ── Analytics ─────────────────────────────────────────────────── -->
+<div class="analytics-wrapper" id="analytics-wrapper" style="display:none;">
+  <div class="analytics-header">
+    <div class="analytics-title">Analytics</div>
+    <div class="tab-bar" id="tab-bar">
+      <button class="tab-btn active" data-tab="freq">📊 Frequency</button>
+      <button class="tab-btn" data-tab="hotcold">🔥 Hot &amp; Cold</button>
+      <button class="tab-btn" data-tab="pairs">🔗 Pair Correlation</button>
+      <button class="tab-btn" data-tab="gap">⏳ Gap Analysis</button>
+      <button class="tab-btn" data-tab="powerplay">⚡ Power Play</button>
+      <button class="tab-btn" data-tab="daypattern">📅 Day Pattern</button>
+      <button class="tab-btn" data-tab="trend">📈 Trend</button>
+    </div>
   </div>
 
-  <p class="chart-subtitle">White Balls (1 – 69)</p>
-  <div class="chart-container">
-    <svg id="wb-freq-svg" class="chart-svg"></svg>
-  </div>
+  <div class="tab-panels">
 
-  <hr class="chart-divider">
+    <!-- ① Frequency -->
+    <div class="tab-panel active" id="panel-freq">
+      <div class="legend" id="freq-legend">
+        <span><span class="legend-dot" style="background:#d1d5db;"></span>Not in draw</span>
+        <span><span class="legend-dot" style="background:#e52b36;"></span>White Ball (current draw)</span>
+        <span><span class="legend-dot" style="background:#f59e0b;"></span>Powerball (current draw)</span>
+      </div>
+      <p class="panel-subtitle">White Balls (1–69)</p>
+      <div class="chart-container"><svg id="wb-freq-svg" class="chart-svg"></svg></div>
+      <hr class="chart-divider">
+      <p class="panel-subtitle">Powerball (1–26)</p>
+      <div class="chart-container"><svg id="pb-freq-svg" class="chart-svg"></svg></div>
+    </div>
 
-  <p class="chart-subtitle">Powerball (1 – 26)</p>
-  <div class="chart-container">
-    <svg id="pb-freq-svg" class="chart-svg"></svg>
-  </div>
-</div>
+    <!-- ② Hot & Cold -->
+    <div class="tab-panel" id="panel-hotcold">
+      <div class="lookback-control">
+        <span>Lookback window:</span>
+        <select id="lookback-select">
+          <option value="20">Last 20 draws</option>
+          <option value="50">Last 50 draws</option>
+          <option value="100">Last 100 draws</option>
+          <option value="all" selected>All draws</option>
+        </select>
+      </div>
+      <div class="panel-row">
+        <div class="panel-col">
+          <p class="panel-subtitle">🔥 Hottest White Balls (Top 10)</p>
+          <div class="ball-row" id="hot-wb-row"></div>
+          <p class="panel-subtitle">❄️ Coldest White Balls (Bottom 10)</p>
+          <div class="ball-row" id="cold-wb-row"></div>
+        </div>
+        <div class="panel-col">
+          <p class="panel-subtitle">🔥 Hottest Powerballs (Top 5)</p>
+          <div class="ball-row" id="hot-pb-row"></div>
+          <p class="panel-subtitle">❄️ Coldest Powerballs (Bottom 5)</p>
+          <div class="ball-row" id="cold-pb-row"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ③ Pair Correlation -->
+    <div class="tab-panel" id="panel-pairs">
+      <p class="panel-subtitle">Top 20 white ball pairs most frequently appearing in the same draw</p>
+      <div class="chart-container"><svg id="pairs-svg" class="chart-svg"></svg></div>
+    </div>
+
+    <!-- ④ Gap Analysis -->
+    <div class="tab-panel" id="panel-gap">
+      <p class="panel-subtitle">White balls — draws since last appearance (top 30 most overdue, amber = &gt;10 draws)</p>
+      <div class="chart-container"><svg id="gap-wb-svg" class="chart-svg"></svg></div>
+      <hr class="chart-divider">
+      <p class="panel-subtitle">Powerball — draws since last appearance (all 26, sorted by gap)</p>
+      <div class="chart-container"><svg id="gap-pb-svg" class="chart-svg"></svg></div>
+    </div>
+
+    <!-- ⑤ Power Play -->
+    <div class="tab-panel" id="panel-powerplay">
+      <p class="panel-subtitle">Power Play multiplier distribution across all loaded draws</p>
+      <div id="powerplay-content">
+        <div class="chart-container"><svg id="powerplay-svg" class="chart-svg"></svg></div>
+      </div>
+    </div>
+
+    <!-- ⑥ Day Pattern -->
+    <div class="tab-panel" id="panel-daypattern">
+      <p class="panel-subtitle">Total draws per day of week</p>
+      <div class="chart-container"><svg id="daypattern-svg" class="chart-svg"></svg></div>
+      <hr class="chart-divider">
+      <p class="panel-subtitle">Top 5 white balls per draw day</p>
+      <div id="daypattern-balls"></div>
+    </div>
+
+    <!-- ⑦ Number Trend -->
+    <div class="tab-panel" id="panel-trend">
+      <div class="trend-controls">
+        <div class="number-picker">
+          <button id="trend-prev">‹</button>
+          <span class="picker-display" id="trend-display">7</span>
+          <button id="trend-next">›</button>
+        </div>
+        <div class="trend-type-btns">
+          <button class="trend-type-btn active" id="trend-wb-btn">White Ball</button>
+          <button class="trend-type-btn" id="trend-pb-btn">Powerball</button>
+        </div>
+        <span class="trend-hint">Or click any ball on the grid ↑</span>
+      </div>
+      <div class="legend">
+        <span><span class="legend-line" style="background:#e52b36;"></span>Cumulative appearances</span>
+        <span><span class="legend-line" style="background:#f59e0b;opacity:0.7;"></span>Rolling 30-draw count</span>
+      </div>
+      <div class="chart-container"><svg id="trend-svg" class="chart-svg"></svg></div>
+    </div>
+
+  </div><!-- /.tab-panels -->
+</div><!-- /.analytics-wrapper -->
 
 <div id="chart-tooltip"></div>
 
 <script>
-  let allDraws = [];
-  let currentIndex = 0;
-  let isMappingAll = false;
+// ── State ────────────────────────────────────────────────────────────────
+let allDraws       = [];
+let currentIndex   = 0;
+let isMappingAll   = false;
+let activeTab      = 'freq';
+let trendNumber    = 7;
+let trendType      = 'wb';    // 'wb' | 'pb'
+let hotcoldLookback = 'all';
 
-  const select       = document.getElementById('drawSelect');
-  const olderBtn     = document.getElementById('olderBtn');
-  const newerBtn     = document.getElementById('newerBtn');
-  const mapAllBtn    = document.getElementById('mapAllBtn');
-  const loadingMsg   = document.getElementById('loadingMsg');
-  const dateRangeDisplay = document.getElementById('dateRangeDisplay');
+const ERA_CUTOFF = '2015-10-07';
+const NS  = 'http://www.w3.org/2000/svg';
+const DAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const DAY_COLORS = { Mon:'#3b82f6', Wed:'#8b5cf6', Sat:'#e52b36',
+                     Tue:'#10b981', Thu:'#f59e0b', Fri:'#6b7280', Sun:'#9ca3af' };
+const PP_COLORS  = { '2×':'#3b82f6','3×':'#8b5cf6','4×':'#10b981','5×':'#f59e0b','10×':'#e52b36' };
 
-  // ── Build cell grids ──────────────────────────────────────────────────────
-  function buildGrid(id, max) {
-    const container = document.getElementById(id);
-    for (let i = 1; i <= max; i++) {
-      const cell = document.createElement('div');
-      cell.className = 'cell';
-      cell.id = `${id}-${i}`;
-      cell.textContent = i;
-      container.appendChild(cell);
-    }
+// ── DOM refs ──────────────────────────────────────────────────────────────
+const select           = document.getElementById('drawSelect');
+const olderBtn         = document.getElementById('olderBtn');
+const newerBtn         = document.getElementById('newerBtn');
+const mapAllBtn        = document.getElementById('mapAllBtn');
+const loadingMsg       = document.getElementById('loadingMsg');
+const dateRangeDisplay = document.getElementById('dateRangeDisplay');
+const tooltip          = document.getElementById('chart-tooltip');
+
+// ── SVG helpers ───────────────────────────────────────────────────────────
+function svgEl(tag, attrs = {}, text) {
+  const el = document.createElementNS(NS, tag);
+  for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, String(v));
+  if (text !== undefined) el.textContent = text;
+  return el;
+}
+const showTip = (e, html) => {
+  tooltip.style.display = 'block';
+  tooltip.style.left = (e.clientX + 14) + 'px';
+  tooltip.style.top  = (e.clientY - 10) + 'px';
+  tooltip.innerHTML  = html;
+};
+const hideTip = () => (tooltip.style.display = 'none');
+
+// ── Build cell grids ──────────────────────────────────────────────────────
+function buildGrid(id, max) {
+  const container = document.getElementById(id);
+  const isWb = id === 'wb-grid';
+  for (let i = 1; i <= max; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+    cell.id = `${id}-${i}`;
+    cell.textContent = i;
+    cell.addEventListener('click', () => {
+      trendType   = isWb ? 'wb' : 'pb';
+      trendNumber = i;
+      document.getElementById('trend-display').textContent = i;
+      document.getElementById('trend-wb-btn').classList.toggle('active', isWb);
+      document.getElementById('trend-pb-btn').classList.toggle('active', !isWb);
+      updateTrendPickerBounds();
+      switchTab('trend');
+      renderActivePanel();
+    });
+    container.appendChild(cell);
   }
-  buildGrid('wb-grid', 69);
-  buildGrid('pb-grid', 26);
+}
+buildGrid('wb-grid', 69);
+buildGrid('pb-grid', 26);
 
-  // ── Parse a line of draw data ─────────────────────────────────────────────
-  function parseLine(line) {
-    const parts = line.trim().split(/\s+/);
-    if (parts.length < 7) return null;
+// ── Parsing helpers ───────────────────────────────────────────────────────
+function parseLine(line) {
+  const p = line.trim().split(/\s+/);
+  if (p.length < 7) return null;
+  return {
+    date: p[0],
+    wb: [1,2,3,4,5].map(i => parseInt(p[i])),
+    pb: parseInt(p[6]),
+    multiplier: NaN,
+    dayOfWeek: new Date(p[0] + 'T12:00:00').getDay()
+  };
+}
+function parseApiResponse(apiData) {
+  return apiData.map(d => {
+    const parts = d.winning_numbers.trim().split(/\s+/);
+    if (parts.length < 6) return null;
+    const dateStr = d.draw_date.split('T')[0];
     return {
-      date: parts[0],
-      wb: [parseInt(parts[1]), parseInt(parts[2]), parseInt(parts[3]),
-           parseInt(parts[4]), parseInt(parts[5])],
-      pb: parseInt(parts[6])
+      date: dateStr,
+      pb: parseInt(parts.pop(), 10),
+      wb: parts.map(n => parseInt(n, 10)),
+      multiplier: parseInt(d.multiplier) || NaN,
+      dayOfWeek: new Date(dateStr + 'T12:00:00').getDay()
     };
-  }
+  }).filter(Boolean);
+}
 
-  // ── Initialize and load data ──────────────────────────────────────────────
-  async function initData() {
-    // Embedded offline fallback dataset (template literal — actual newlines)
-    const rawOffline = `
+// ── initData ──────────────────────────────────────────────────────────────
+async function initData() {
+  // Embedded offline fallback — all valid current-format draws
+  const rawOffline = `
 2026-08-10 6 37 54 55 64 10
 2026-08-08 5 9 35 54 63 7
 2026-08-05 14 20 59 60 61 25
@@ -371,375 +582,657 @@
 2026-06-17 3 12 26 49 53 13
 2026-06-15 23 25 55 57 60 20
 2026-06-13 2 3 13 44 50 1
-    `.trim();
+  `.trim();
 
-    // Parse the offline data — split on real newlines (works on all OSes)
-    let combined = rawOffline.split(/\r?\n/).map(parseLine).filter(Boolean);
+  let combined = rawOffline.split(/\r?\n/).map(parseLine).filter(Boolean);
 
-    // ── Tier 1: Direct API fetch ──────────────────────────────────────────
-    const apiUrl = "https://data.ny.gov/resource/d6yy-54nc.json?$order=draw_date%20DESC&$limit=5000";
-    let apiSuccess = false;
+  // Fixed API ID: d6yy-54nr (not d6yy-54nc) + era filter server-side
+  const apiUrl =
+    `https://data.ny.gov/resource/d6yy-54nr.json` +
+    `?$order=draw_date%20DESC&$limit=2000` +
+    `&$where=draw_date%20>=%20%272015-10-07T00:00:00%27`;
 
-    const parseApiResponse = (apiData) =>
-      apiData.map(d => {
-        const parts = d.winning_numbers.trim().split(/\s+/);
-        if (parts.length < 6) return null;
-        return {
-          date: d.draw_date.split('T')[0],
-          pb: parseInt(parts.pop(), 10),
-          wb: parts.map(n => parseInt(n, 10))
-        };
-      }).filter(Boolean);
-
+  try {
+    const res = await fetch(apiUrl);
+    if (!res.ok) throw new Error('Direct fetch failed (' + res.status + ')');
+    combined = [...combined, ...parseApiResponse(await res.json())];
+    loadingMsg.style.display = 'none';
+  } catch (e) {
+    console.warn('Direct API blocked — trying CORS proxy…', e.message);
     try {
-      const res = await fetch(apiUrl);
-      if (!res.ok) throw new Error("Direct API response not OK");
+      const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(apiUrl);
+      const res = await fetch(proxyUrl);
+      if (!res.ok) throw new Error('Proxy failed (' + res.status + ')');
       combined = [...combined, ...parseApiResponse(await res.json())];
-      apiSuccess = true;
       loadingMsg.style.display = 'none';
-
-    } catch (e) {
-      console.warn("Direct API blocked — trying CORS proxy…", e.message);
-
-      try {
-        // ── Tier 2: CORS proxy ────────────────────────────────────────────
-        const proxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(apiUrl);
-        const res = await fetch(proxyUrl);
-        if (!res.ok) throw new Error("Proxy response not OK");
-        combined = [...combined, ...parseApiResponse(await res.json())];
-        apiSuccess = true;
-        loadingMsg.style.display = 'none';
-
-      } catch (proxyErr) {
-        // ── Tier 3: Offline embedded data (already parsed above) ──────────
-        console.warn("Proxy also failed — using embedded offline data.", proxyErr.message);
-        loadingMsg.innerHTML =
-          "📡 Offline Mode — using embedded dataset.<br>" +
-          "Line visibility is boosted for smaller datasets.";
-        loadingMsg.className = "loading warning";
-      }
-    }
-
-    // ── Merge, validate, deduplicate ──────────────────────────────────────
-    const seen = new Set();
-    allDraws = combined.filter(d => {
-      if (
-        d.wb.length >= 5 &&
-        d.wb.every(n => !isNaN(n) && n >= 1 && n <= 69) &&
-        !isNaN(d.pb) && d.pb >= 1 && d.pb <= 26 &&
-        !seen.has(d.date)
-      ) {
-        d.wb = d.wb.slice(0, 5);
-        seen.add(d.date);
-        return true;
-      }
-      return false;
-    });
-
-    // Newest first
-    allDraws.sort((a, b) => new Date(b.date) - new Date(a.date));
-
-    // ── Populate select ───────────────────────────────────────────────────
-    select.innerHTML = '';
-    allDraws.forEach((draw, idx) => {
-      const opt = document.createElement('option');
-      opt.value = idx;
-      opt.textContent = `${draw.date}  (${draw.wb.join(', ')} | PB: ${draw.pb})`;
-      select.appendChild(opt);
-    });
-
-    select.disabled = false;
-    olderBtn.disabled = false;
-    mapAllBtn.disabled = false;
-    dateRangeDisplay.style.display = 'block';
-    renderDraw(0);
-  }
-
-  // ── Clear the grids ───────────────────────────────────────────────────────
-  function clearCells() {
-    document.querySelectorAll('.cell').forEach(c => {
-      c.className = 'cell';
-      c.style.backgroundColor = '';
-      c.style.color = '';
-      c.style.fontWeight = '';
-    });
-    document.getElementById('svg-lines').innerHTML = '';
-  }
-
-  // ── Draw SVG polyline on white-ball grid ──────────────────────────────────
-  function drawPolyline(svg, numbers, containerRect, stroke, strokeWidth, opacity, dashed) {
-    const points = numbers.map(num => {
-      const cell = document.getElementById(`wb-grid-${num}`);
-      if (!cell) return null;
-      const r = cell.getBoundingClientRect();
-      return `${r.left - containerRect.left + r.width / 2},${r.top - containerRect.top + r.height / 2}`;
-    }).filter(Boolean);
-
-    if (points.length < 2) return;
-    const poly = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
-    poly.setAttribute('points', points.join(' '));
-    poly.setAttribute('fill', 'none');
-    poly.setAttribute('stroke', `rgba(${stroke},${opacity})`);
-    poly.setAttribute('stroke-width', strokeWidth);
-    poly.setAttribute('stroke-linejoin', 'round');
-    if (dashed) poly.setAttribute('stroke-dasharray', '8 4');
-    svg.appendChild(poly);
-  }
-
-  // ── Render a single draw ──────────────────────────────────────────────────
-  function renderDraw(index) {
-    clearCells();
-    const draw = allDraws[index];
-    dateRangeDisplay.textContent = `Single Draw: ${draw.date}`;
-
-    const svg = document.getElementById('svg-lines');
-    const containerRect = document.getElementById('wb-grid').getBoundingClientRect();
-    const sortedWb = [...draw.wb].sort((a, b) => a - b);
-
-    drawPolyline(svg, sortedWb, containerRect, '51,51,51', 3, 1, true);
-    sortedWb.forEach(n => document.getElementById(`wb-grid-${n}`)?.classList.add('active'));
-
-    const pbCell = document.getElementById(`pb-grid-${draw.pb}`);
-    if (pbCell) pbCell.classList.add('active');
-
-    select.value = index;
-    newerBtn.disabled = index === 0;
-    olderBtn.disabled = index === allDraws.length - 1;
-
-    // Frequency chart: show all-time frequency, highlight this draw's numbers
-    renderFrequencyChart(allDraws, draw.wb, draw.pb, false);
-  }
-
-  // ── Render heatmap over all draws ─────────────────────────────────────────
-  function renderAllDraws() {
-    clearCells();
-    const newestDate = allDraws[0].date;
-    const oldestDate = allDraws[allDraws.length - 1].date;
-    dateRangeDisplay.textContent =
-      `All Draws: ${oldestDate} → ${newestDate}  (${allDraws.length} total)`;
-
-    const svg = document.getElementById('svg-lines');
-    const containerRect = document.getElementById('wb-grid').getBoundingClientRect();
-
-    // Scale line visibility to dataset size
-    const n = allDraws.length;
-    const lineOpacity  = n > 500 ? 0.03 : n > 100 ? 0.12 : 0.30;
-    const strokeWidth  = n > 500 ? 1 : 2;
-
-    const wbCounts = {}, pbCounts = {};
-
-    allDraws.forEach(draw => {
-      draw.wb.forEach(x => wbCounts[x] = (wbCounts[x] || 0) + 1);
-      pbCounts[draw.pb] = (pbCounts[draw.pb] || 0) + 1;
-
-      const sorted = [...draw.wb].sort((a, b) => a - b);
-      drawPolyline(svg, sorted, containerRect, '51,51,51', strokeWidth, lineOpacity, false);
-    });
-
-    // Apply heatmap colors
-    const maxWb = Math.max(...Object.values(wbCounts), 1);
-    const maxPb = Math.max(...Object.values(pbCounts), 1);
-
-    Object.entries(wbCounts).forEach(([num, cnt]) => {
-      const cell = document.getElementById(`wb-grid-${num}`);
-      if (!cell) return;
-      const intensity = cnt / maxWb;
-      cell.style.backgroundColor = `rgba(229, 43, 54, ${intensity})`;
-      if (intensity > 0.4) { cell.style.color = 'white'; cell.style.fontWeight = '700'; }
-    });
-    Object.entries(pbCounts).forEach(([num, cnt]) => {
-      const cell = document.getElementById(`pb-grid-${num}`);
-      if (!cell) return;
-      const intensity = cnt / maxPb;
-      cell.style.backgroundColor = `rgba(229, 43, 54, ${intensity})`;
-      if (intensity > 0.4) { cell.style.color = 'white'; cell.style.fontWeight = '700'; }
-    });
-
-    // Frequency chart: all-time mode, no per-draw highlight
-    renderFrequencyChart(allDraws, [], null, true);
-  }
-
-  // ── Frequency bar chart ───────────────────────────────────────────────────
-  function renderFrequencyChart(draws, highlightedWb, highlightedPb, isAllMode) {
-    document.getElementById('chart-section').style.display = 'block';
-    document.getElementById('chart-header').textContent =
-      isAllMode ? `Number Frequency — All ${draws.length} Draws` : 'Number Frequency — Historical (current draw highlighted)';
-
-    // Show/hide legend depending on mode
-    const legend = document.querySelector('.chart-legend');
-    legend.style.display = isAllMode ? 'none' : 'flex';
-
-    // Tally frequencies
-    const wbCounts = {}, pbCounts = {};
-    for (let i = 1; i <= 69; i++) wbCounts[i] = 0;
-    for (let i = 1; i <= 26; i++) pbCounts[i] = 0;
-    draws.forEach(d => {
-      d.wb.forEach(n => { if (n >= 1 && n <= 69) wbCounts[n]++; });
-      if (d.pb >= 1 && d.pb <= 26) pbCounts[d.pb]++;
-    });
-
-    drawBarChart('wb-freq-svg',  wbCounts, 69, highlightedWb, '#e52b36', isAllMode);
-    drawBarChart('pb-freq-svg',  pbCounts, 26,
-      highlightedPb != null ? [highlightedPb] : [], '#f59e0b', isAllMode);
-  }
-
-  function drawBarChart(svgId, counts, maxNum, highlighted, highlightColor, isAllMode) {
-    const svg = document.getElementById(svgId);
-    svg.innerHTML = '';
-
-    const tooltip  = document.getElementById('chart-tooltip');
-    const PAD      = { top: 14, right: 10, bottom: 30, left: 38 };
-    const CHART_H  = 170;
-    const containerW = svg.parentElement.clientWidth || 860;
-    const numBars  = maxNum;
-    const gap      = 2;
-    const barW     = Math.max(3, Math.floor((containerW - PAD.left - PAD.right - gap * (numBars - 1)) / numBars));
-    const svgW     = PAD.left + numBars * barW + (numBars - 1) * gap + PAD.right;
-    const svgH     = CHART_H + PAD.top + PAD.bottom;
-
-    svg.setAttribute('viewBox', `0 0 ${svgW} ${svgH}`);
-    svg.setAttribute('width',  Math.max(svgW, containerW));
-    svg.setAttribute('height', svgH);
-
-    const maxCount = Math.max(...Object.values(counts), 1);
-
-    // Horizontal gridlines (0, 25%, 50%, 75%, 100%)
-    const ns = 'http://www.w3.org/2000/svg';
-    [0, 0.25, 0.5, 0.75, 1].forEach(frac => {
-      const y = PAD.top + CHART_H - frac * CHART_H;
-      const gridLine = document.createElementNS(ns, 'line');
-      gridLine.setAttribute('x1', PAD.left);
-      gridLine.setAttribute('x2', svgW - PAD.right);
-      gridLine.setAttribute('y1', y);
-      gridLine.setAttribute('y2', y);
-      gridLine.setAttribute('stroke', '#f3f4f6');
-      gridLine.setAttribute('stroke-width', '1');
-      svg.appendChild(gridLine);
-
-      // Y-axis label
-      const lbl = document.createElementNS(ns, 'text');
-      lbl.setAttribute('x', PAD.left - 5);
-      lbl.setAttribute('y', y + 4);
-      lbl.setAttribute('text-anchor', 'end');
-      lbl.setAttribute('font-size', '9');
-      lbl.setAttribute('fill', '#9ca3af');
-      lbl.setAttribute('font-family', 'inherit');
-      lbl.textContent = Math.round(frac * maxCount);
-      svg.appendChild(lbl);
-    });
-
-    // Y-axis line
-    const axis = document.createElementNS(ns, 'line');
-    axis.setAttribute('x1', PAD.left - 1); axis.setAttribute('x2', PAD.left - 1);
-    axis.setAttribute('y1', PAD.top);      axis.setAttribute('y2', PAD.top + CHART_H);
-    axis.setAttribute('stroke', '#e5e7eb'); axis.setAttribute('stroke-width', '1');
-    svg.appendChild(axis);
-
-    // Bars
-    for (let i = 1; i <= maxNum; i++) {
-      const count     = counts[i] || 0;
-      const barH      = (count / maxCount) * CHART_H;
-      const x         = PAD.left + (i - 1) * (barW + gap);
-      const y         = PAD.top + CHART_H - barH;
-      const isActive  = highlighted.includes(i);
-
-      // Determine bar fill
-      let fillColor;
-      if (isActive) {
-        fillColor = highlightColor;
-      } else if (isAllMode) {
-        // In "Map All" mode: gradient from light to deep red based on intensity
-        const t = count / maxCount;
-        fillColor = `rgba(229,43,54,${(0.15 + t * 0.75).toFixed(2)})`;
-      } else {
-        fillColor = '#d1d5db';
-      }
-
-      const rect = document.createElementNS(ns, 'rect');
-      rect.setAttribute('x', x);
-      rect.setAttribute('y', barH > 0 ? y : PAD.top + CHART_H - 1);
-      rect.setAttribute('width', barW);
-      rect.setAttribute('height', Math.max(barH, barH > 0 ? 1 : 0));
-      rect.setAttribute('fill', fillColor);
-      rect.setAttribute('rx', Math.min(2, barW / 2));
-      rect.style.cursor = 'default';
-
-      rect.addEventListener('mousemove', e => {
-        tooltip.style.display = 'block';
-        tooltip.style.left  = (e.clientX + 14) + 'px';
-        tooltip.style.top   = (e.clientY - 10) + 'px';
-        tooltip.innerHTML   =
-          `<strong>#${i}</strong> — drawn <strong>${count}</strong> time${count !== 1 ? 's' : ''}` +
-          (isActive ? ' ★' : '');
-      });
-      rect.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
-
-      svg.appendChild(rect);
-
-      // X-axis labels: every 5 for WB, every 1 for PB ≤ 26
-      const showLabel = maxNum <= 26 ? true : (i === 1 || i % 5 === 0);
-      if (showLabel) {
-        const lbl = document.createElementNS(ns, 'text');
-        lbl.setAttribute('x', x + barW / 2);
-        lbl.setAttribute('y', svgH - 6);
-        lbl.setAttribute('text-anchor', 'middle');
-        lbl.setAttribute('font-size', maxNum <= 26 ? '10' : '9');
-        lbl.setAttribute('fill', isActive ? highlightColor : '#9ca3af');
-        lbl.setAttribute('font-weight', isActive ? '700' : '400');
-        lbl.setAttribute('font-family', 'inherit');
-        lbl.textContent = i;
-        svg.appendChild(lbl);
-      }
+    } catch (pe) {
+      console.warn('Proxy also failed — using offline data.', pe.message);
+      loadingMsg.innerHTML = '📡 Offline Mode — embedded dataset only.';
+      loadingMsg.className = 'loading warning';
     }
   }
 
-  // ── Navigation ────────────────────────────────────────────────────────────
-  olderBtn.addEventListener('click', () => {
-    if (currentIndex < allDraws.length - 1) {
-      currentIndex++;
-      if (!isMappingAll) renderDraw(currentIndex);
-      select.value = currentIndex;
+  // Deduplicate, validate, apply era filter client-side
+  const seen = new Set();
+  allDraws = combined.filter(d => {
+    if (
+      d.date >= ERA_CUTOFF &&
+      Array.isArray(d.wb) && d.wb.length >= 5 &&
+      d.wb.every(n => !isNaN(n) && n >= 1 && n <= 69) &&
+      !isNaN(d.pb) && d.pb >= 1 && d.pb <= 26 &&
+      !seen.has(d.date)
+    ) {
+      d.wb = d.wb.slice(0, 5);
+      seen.add(d.date);
+      return true;
     }
+    return false;
+  }).sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  // Stats bar
+  const statsBar = document.getElementById('stats-bar');
+  statsBar.style.display = 'flex';
+  document.getElementById('stat-draws').textContent = allDraws.length;
+  document.getElementById('stat-range').textContent =
+    `${allDraws[allDraws.length - 1].date} – ${allDraws[0].date}`;
+
+  // Populate select dropdown
+  select.innerHTML = '';
+  allDraws.forEach((draw, idx) => {
+    const opt = document.createElement('option');
+    opt.value = idx;
+    opt.textContent = `${draw.date}  (${draw.wb.join(', ')} | PB: ${draw.pb})`;
+    select.appendChild(opt);
   });
 
-  newerBtn.addEventListener('click', () => {
-    if (currentIndex > 0) {
-      currentIndex--;
-      if (!isMappingAll) renderDraw(currentIndex);
-      select.value = currentIndex;
-    }
+  select.disabled = false;
+  olderBtn.disabled = false;
+  mapAllBtn.disabled = false;
+  dateRangeDisplay.style.display = 'block';
+  document.getElementById('analytics-wrapper').style.display = 'block';
+
+  renderDraw(0);
+}
+
+// ── Clear grids ───────────────────────────────────────────────────────────
+function clearCells() {
+  document.querySelectorAll('.cell').forEach(c => {
+    c.className = 'cell';
+    c.style.backgroundColor = '';
+    c.style.color = '';
+    c.style.fontWeight = '';
+  });
+  document.getElementById('svg-lines').innerHTML = '';
+}
+
+// ── Draw SVG polyline on white-ball grid ──────────────────────────────────
+function drawPolyline(svg, numbers, containerRect, strokeRgb, strokeWidth, opacity, dashed) {
+  const points = numbers.map(num => {
+    const cell = document.getElementById(`wb-grid-${num}`);
+    if (!cell) return null;
+    const r = cell.getBoundingClientRect();
+    return `${r.left - containerRect.left + r.width / 2},${r.top - containerRect.top + r.height / 2}`;
+  }).filter(Boolean);
+  if (points.length < 2) return;
+  const poly = svgEl('polyline', {
+    points: points.join(' '),
+    fill: 'none',
+    stroke: `rgba(${strokeRgb},${opacity})`,
+    'stroke-width': strokeWidth,
+    'stroke-linejoin': 'round',
+    ...(dashed ? { 'stroke-dasharray': '8 4' } : {})
+  });
+  svg.appendChild(poly);
+}
+
+// ── Render single draw ────────────────────────────────────────────────────
+function renderDraw(index) {
+  clearCells();
+  const draw = allDraws[index];
+  const ppStr = !isNaN(draw.multiplier) ? `  ·  PP ${draw.multiplier}×` : '';
+  dateRangeDisplay.textContent =
+    `Single Draw: ${draw.date}  ·  WB: ${draw.wb.join(' · ')}  ·  PB: ${draw.pb}${ppStr}`;
+
+  const svg  = document.getElementById('svg-lines');
+  const rect = document.getElementById('wb-grid').getBoundingClientRect();
+  const sorted = [...draw.wb].sort((a, b) => a - b);
+  drawPolyline(svg, sorted, rect, '51,51,51', 3, 1, true);
+  sorted.forEach(n => document.getElementById(`wb-grid-${n}`)?.classList.add('active'));
+  document.getElementById(`pb-grid-${draw.pb}`)?.classList.add('active');
+
+  select.value       = index;
+  newerBtn.disabled  = index === 0;
+  olderBtn.disabled  = index === allDraws.length - 1;
+
+  renderActivePanel();
+}
+
+// ── Render heatmap (all draws) ────────────────────────────────────────────
+function renderAllDraws() {
+  clearCells();
+  const n = allDraws.length;
+  dateRangeDisplay.textContent =
+    `All ${n} draws  ·  ${allDraws[n-1].date} → ${allDraws[0].date}`;
+
+  const svg  = document.getElementById('svg-lines');
+  const rect = document.getElementById('wb-grid').getBoundingClientRect();
+  const opacity = n > 500 ? 0.03 : n > 100 ? 0.12 : 0.30;
+  const sw      = n > 500 ? 1 : 2;
+
+  const wbC = {}, pbC = {};
+  allDraws.forEach(d => {
+    d.wb.forEach(x => wbC[x] = (wbC[x] || 0) + 1);
+    pbC[d.pb] = (pbC[d.pb] || 0) + 1;
+    drawPolyline(svg, [...d.wb].sort((a,b)=>a-b), rect, '51,51,51', sw, opacity, false);
   });
 
-  select.addEventListener('change', e => {
-    currentIndex = parseInt(e.target.value);
-    if (isMappingAll) {
-      isMappingAll = false;
-      mapAllBtn.textContent = 'Map All Draws';
-      mapAllBtn.classList.remove('active');
-    }
-    renderDraw(currentIndex);
+  const maxWb = Math.max(...Object.values(wbC), 1);
+  const maxPb = Math.max(...Object.values(pbC), 1);
+  Object.entries(wbC).forEach(([num, cnt]) => {
+    const cell = document.getElementById(`wb-grid-${num}`);
+    if (!cell) return;
+    const t = cnt / maxWb;
+    cell.style.backgroundColor = `rgba(229,43,54,${t})`;
+    if (t > 0.4) { cell.style.color = 'white'; cell.style.fontWeight = '700'; }
+  });
+  Object.entries(pbC).forEach(([num, cnt]) => {
+    const cell = document.getElementById(`pb-grid-${num}`);
+    if (!cell) return;
+    const t = cnt / maxPb;
+    cell.style.backgroundColor = `rgba(229,43,54,${t})`;
+    if (t > 0.4) { cell.style.color = 'white'; cell.style.fontWeight = '700'; }
   });
 
-  mapAllBtn.addEventListener('click', e => {
-    isMappingAll = !isMappingAll;
-    if (isMappingAll) {
-      e.target.textContent = 'Show Single Draw';
-      e.target.classList.add('active');
-      renderAllDraws();
+  renderActivePanel();
+}
+
+// ── Tab management ────────────────────────────────────────────────────────
+function switchTab(tabId) {
+  activeTab = tabId;
+  document.querySelectorAll('.tab-btn').forEach(
+    btn => btn.classList.toggle('active', btn.dataset.tab === tabId)
+  );
+  document.querySelectorAll('.tab-panel').forEach(
+    p => p.classList.toggle('active', p.id === 'panel-' + tabId)
+  );
+}
+
+function renderActivePanel() {
+  if (!allDraws.length) return;
+  const cur = allDraws[currentIndex];
+  switch (activeTab) {
+    case 'freq':
+      renderFrequencyChart(allDraws, isMappingAll ? [] : cur.wb,
+                           isMappingAll ? null : cur.pb, isMappingAll); break;
+    case 'hotcold':    renderHotCold(allDraws); break;
+    case 'pairs':      renderPairCorrelation(allDraws); break;
+    case 'gap':        renderGapAnalysis(allDraws); break;
+    case 'powerplay':  renderPowerPlay(allDraws); break;
+    case 'daypattern': renderDayOfWeek(allDraws); break;
+    case 'trend':      renderNumberTrend(allDraws, trendNumber, trendType); break;
+  }
+}
+
+// ── ① Frequency chart ─────────────────────────────────────────────────────
+function renderFrequencyChart(draws, highlightedWb, highlightedPb, isAllMode) {
+  document.getElementById('freq-legend').style.display = isAllMode ? 'none' : 'flex';
+  const wbC = {}, pbC = {};
+  for (let i = 1; i <= 69; i++) wbC[i] = 0;
+  for (let i = 1; i <= 26; i++) pbC[i] = 0;
+  draws.forEach(d => {
+    d.wb.forEach(n => { if (n>=1&&n<=69) wbC[n]++; });
+    if (d.pb>=1&&d.pb<=26) pbC[d.pb]++;
+  });
+  drawBarChart('wb-freq-svg', wbC, 69, highlightedWb || [], '#e52b36', isAllMode);
+  drawBarChart('pb-freq-svg', pbC, 26, highlightedPb != null ? [highlightedPb] : [], '#f59e0b', isAllMode);
+}
+
+function drawBarChart(svgId, counts, maxNum, highlighted, hiColor, isAllMode) {
+  const svg = document.getElementById(svgId);
+  svg.innerHTML = '';
+  const PAD = { top:14, right:10, bottom:30, left:38 };
+  const CH  = 170;
+  const cW  = svg.parentElement.clientWidth || 860;
+  const gap = 2;
+  const barW = Math.max(3, Math.floor((cW - PAD.left - PAD.right - gap*(maxNum-1)) / maxNum));
+  const svgW = PAD.left + maxNum*barW + (maxNum-1)*gap + PAD.right;
+  const svgH = CH + PAD.top + PAD.bottom;
+  svg.setAttribute('viewBox', `0 0 ${svgW} ${svgH}`);
+  svg.setAttribute('width',  Math.max(svgW, cW));
+  svg.setAttribute('height', svgH);
+  const maxC = Math.max(...Object.values(counts), 1);
+
+  [0, .25, .5, .75, 1].forEach(f => {
+    const y = PAD.top + CH - f*CH;
+    svg.appendChild(svgEl('line', {x1:PAD.left, x2:svgW-PAD.right, y1:y, y2:y, stroke:'#f3f4f6', 'stroke-width':1}));
+    svg.appendChild(svgEl('text', {x:PAD.left-5, y:y+4, 'text-anchor':'end', 'font-size':9, fill:'#9ca3af', 'font-family':'inherit'}, Math.round(f*maxC)));
+  });
+  svg.appendChild(svgEl('line', {x1:PAD.left-1, x2:PAD.left-1, y1:PAD.top, y2:PAD.top+CH, stroke:'#e5e7eb', 'stroke-width':1}));
+
+  for (let i = 1; i <= maxNum; i++) {
+    const cnt = counts[i] || 0;
+    const bH  = (cnt / maxC) * CH;
+    const x   = PAD.left + (i-1)*(barW+gap);
+    const y   = PAD.top + CH - bH;
+    const isActive = highlighted.includes(i);
+    const fill = isActive
+      ? hiColor
+      : isAllMode
+        ? `rgba(229,43,54,${(0.15 + cnt/maxC*0.75).toFixed(2)})`
+        : '#d1d5db';
+
+    const rect = svgEl('rect', {x, y: bH>0?y:PAD.top+CH-1, width:barW, height:Math.max(bH>0?bH:0,bH>0?1:0), fill, rx:Math.min(2,barW/2)});
+    rect.addEventListener('mousemove', e => showTip(e, `<strong>#${i}</strong> — drawn <strong>${cnt}</strong> time${cnt!==1?'s':''}${isActive?' ★':''}`));
+    rect.addEventListener('mouseleave', hideTip);
+    svg.appendChild(rect);
+
+    const showLabel = maxNum <= 26 ? true : (i===1 || i%5===0);
+    if (showLabel) {
+      svg.appendChild(svgEl('text', {x:x+barW/2, y:svgH-6, 'text-anchor':'middle',
+        'font-size':maxNum<=26?10:9, fill:isActive?hiColor:'#9ca3af',
+        'font-weight':isActive?700:400, 'font-family':'inherit'}, i));
+    }
+  }
+}
+
+// ── ② Hot & Cold ──────────────────────────────────────────────────────────
+function renderHotCold(draws) {
+  const n  = hotcoldLookback === 'all' ? draws.length : parseInt(hotcoldLookback);
+  const sub = draws.slice(0, Math.min(n, draws.length));
+  const wbC = {}, pbC = {};
+  for (let i=1;i<=69;i++) wbC[i]=0;
+  for (let i=1;i<=26;i++) pbC[i]=0;
+  sub.forEach(d => {
+    d.wb.forEach(x => wbC[x]++);
+    if (d.pb>=1&&d.pb<=26) pbC[d.pb]++;
+  });
+  const wbSorted = Object.entries(wbC).sort((a,b)=>b[1]-a[1]);
+  const pbSorted = Object.entries(pbC).sort((a,b)=>b[1]-a[1]);
+  renderBallRow('hot-wb-row',  wbSorted.slice(0,10),    true,  false);
+  renderBallRow('cold-wb-row', [...wbSorted].slice(-10).reverse(), false, false);
+  renderBallRow('hot-pb-row',  pbSorted.slice(0,5),     true,  true);
+  renderBallRow('cold-pb-row', [...pbSorted].slice(-5).reverse(), false, true);
+}
+
+function renderBallRow(containerId, entries, hot, isPb) {
+  const row = document.getElementById(containerId);
+  row.innerHTML = '';
+  entries.forEach(([num, cnt], rank) => {
+    const t = 1 - rank / Math.max(entries.length - 1, 1);
+    const pill = document.createElement('div');
+    pill.className = 'ball-pill';
+    if (hot) {
+      pill.style.background = isPb
+        ? `hsl(38,${80+t*12}%,${42+t*12}%)`
+        : `hsl(${5-t*5},${70+t*15}%,${40+t*14}%)`;
     } else {
-      e.target.textContent = 'Map All Draws';
-      e.target.classList.remove('active');
-      renderDraw(currentIndex);
+      pill.style.background = `hsl(${215+t*10},${55+t*20}%,${42+t*16}%)`;
+    }
+    pill.innerHTML = `<span class="pill-num">${num}</span><span class="pill-count">${cnt}×</span>`;
+    pill.title = `Ball ${num}: drawn ${cnt} time${cnt!==1?'s':''}`;
+    row.appendChild(pill);
+  });
+}
+
+// ── ③ Pair Correlation ────────────────────────────────────────────────────
+function renderPairCorrelation(draws) {
+  const pairC = {};
+  draws.forEach(d => {
+    const s = [...d.wb].sort((a,b)=>a-b);
+    for (let i=0;i<s.length;i++)
+      for (let j=i+1;j<s.length;j++) {
+        const k = `${s[i]}–${s[j]}`;
+        pairC[k] = (pairC[k]||0)+1;
+      }
+  });
+  const top20 = Object.entries(pairC).sort((a,b)=>b[1]-a[1]).slice(0,20);
+  const maxV  = top20[0]?.[1] || 1;
+  drawHorizBarChart('pairs-svg', top20.map(([label, val]) => ({
+    label, val,
+    fill: `rgba(229,43,54,${(0.35 + val/maxV*0.65).toFixed(2)})`,
+    tip: `Pair <strong>${label}</strong> appeared together <strong>${val}</strong> time${val!==1?'s':''}`
+  })), { labelW: 72 });
+}
+
+// ── ④ Gap Analysis ────────────────────────────────────────────────────────
+function renderGapAnalysis(draws) {
+  // draws is newest-first; index 0 = most recent draw
+  const wbLastSeen = {}, pbLastSeen = {};
+  draws.forEach((d, idx) => {
+    d.wb.forEach(n => { if (!(n in wbLastSeen)) wbLastSeen[n] = idx; });
+    if (!(d.pb in pbLastSeen)) pbLastSeen[d.pb] = idx;
+  });
+
+  // White balls — top 30 most overdue
+  const wbGaps = [];
+  for (let i=1;i<=69;i++) {
+    const gap = (i in wbLastSeen) ? wbLastSeen[i] : draws.length;
+    const lastDate = (i in wbLastSeen) ? draws[wbLastSeen[i]].date : 'Never';
+    wbGaps.push({ label: `#${i}`, val: gap, lastDate });
+  }
+  wbGaps.sort((a,b)=>b.val-a.val);
+  const top30  = wbGaps.slice(0, 30);
+  const maxGapW = top30[0]?.val || 1;
+  drawHorizBarChart('gap-wb-svg', top30.map(g => ({
+    label: g.label, val: g.val,
+    fill: g.val > 10 ? '#f59e0b' : '#9ca3af',
+    tip: `<strong>${g.label}</strong> — last drawn <strong>${g.lastDate}</strong> · <strong>${g.val}</strong> draw${g.val!==1?'s':''} ago`
+  })), { labelW: 38 });
+
+  // Powerball — all 26
+  const pbGaps = [];
+  for (let i=1;i<=26;i++) {
+    const gap = (i in pbLastSeen) ? pbLastSeen[i] : draws.length;
+    const lastDate = (i in pbLastSeen) ? draws[pbLastSeen[i]].date : 'Never';
+    pbGaps.push({ label: `#${i}`, val: gap, lastDate });
+  }
+  pbGaps.sort((a,b)=>b.val-a.val);
+  drawHorizBarChart('gap-pb-svg', pbGaps.map(g => ({
+    label: g.label, val: g.val,
+    fill: g.val > 5 ? '#f59e0b' : '#9ca3af',
+    tip: `<strong>PB ${g.label}</strong> — last drawn <strong>${g.lastDate}</strong> · <strong>${g.val}</strong> draw${g.val!==1?'s':''} ago`
+  })), { labelW: 38 });
+}
+
+// ── ⑤ Power Play ─────────────────────────────────────────────────────────
+function renderPowerPlay(draws) {
+  const ppC = {};
+  draws.forEach(d => {
+    if (!isNaN(d.multiplier) && d.multiplier > 0) {
+      const k = d.multiplier + '×';
+      ppC[k] = (ppC[k]||0)+1;
     }
   });
 
-  window.addEventListener('resize', () => {
-    if (!allDraws.length) return;
-    if (isMappingAll) renderAllDraws(); else renderDraw(currentIndex);
+  const content = document.getElementById('powerplay-content');
+  if (Object.keys(ppC).length === 0) {
+    content.innerHTML =
+      '<p style="color:#9ca3af;font-size:0.88rem;padding:12px 0;">' +
+      'Power Play data is only available via the live API.<br>' +
+      'In offline mode this field is unavailable — try loading with network access.</p>';
+    return;
+  }
+  content.innerHTML = '<div class="chart-container"><svg id="powerplay-svg" class="chart-svg"></svg></div>';
+
+  const sorted = Object.entries(ppC).sort((a,b) => parseInt(a)-parseInt(b));
+  const total  = sorted.reduce((s,[,v]) => s+v, 0);
+  drawHorizBarChart('powerplay-svg', sorted.map(([mult, cnt]) => ({
+    label: mult, val: cnt,
+    fill: PP_COLORS[mult] || '#6b7280',
+    tip: `<strong>${mult}</strong> appeared <strong>${cnt}</strong> times (${(cnt/total*100).toFixed(1)}%)`
+  })), { labelW: 40, barH: 32, gap: 10 });
+}
+
+// ── ⑥ Day of Week ─────────────────────────────────────────────────────────
+function renderDayOfWeek(draws) {
+  const dayDraws = {};
+  draws.forEach(d => {
+    const day = DAY_NAMES[d.dayOfWeek];
+    if (!dayDraws[day]) dayDraws[day] = [];
+    dayDraws[day].push(d);
   });
 
-  // ── Start ─────────────────────────────────────────────────────────────────
-  initData();
+  const dayOrder = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const daySummary = dayOrder.filter(d => dayDraws[d]).map(d => [d, dayDraws[d]]);
+
+  drawHorizBarChart('daypattern-svg', daySummary.map(([day, ds]) => ({
+    label: day, val: ds.length,
+    fill: DAY_COLORS[day] || '#6b7280',
+    tip: `<strong>${day}</strong>: <strong>${ds.length}</strong> draws`
+  })), { labelW: 44, barH: 30, gap: 10 });
+
+  // Top-5 ball pills per day
+  const container = document.getElementById('daypattern-balls');
+  container.innerHTML = '';
+  daySummary.forEach(([day, ds]) => {
+    const wbC = {};
+    ds.forEach(d => d.wb.forEach(n => wbC[n] = (wbC[n]||0)+1));
+    const top5 = Object.entries(wbC).sort((a,b)=>b[1]-a[1]).slice(0,5);
+
+    const section = document.createElement('div');
+    section.style.marginBottom = '16px';
+
+    const lbl = document.createElement('p');
+    lbl.className = 'panel-subtitle';
+    lbl.textContent = `${day}  (${ds.length} draws)`;
+    section.appendChild(lbl);
+
+    const row = document.createElement('div');
+    row.className = 'ball-row';
+    top5.forEach(([num, cnt]) => {
+      const pill = document.createElement('div');
+      pill.className = 'ball-pill';
+      pill.style.background = DAY_COLORS[day] || '#6b7280';
+      pill.innerHTML = `<span class="pill-num">${num}</span><span class="pill-count">${cnt}×</span>`;
+      pill.title = `Ball ${num}: ${cnt} appearances on ${day}`;
+      row.appendChild(pill);
+    });
+    section.appendChild(row);
+    container.appendChild(section);
+  });
+}
+
+// ── ⑦ Number Trend ────────────────────────────────────────────────────────
+function renderNumberTrend(draws, number, type) {
+  const svg = document.getElementById('trend-svg');
+  svg.innerHTML = '';
+  if (!draws.length) return;
+
+  const chrono = [...draws].sort((a,b) => new Date(a.date) - new Date(b.date));
+  const total  = chrono.length;
+  const ROLL   = 30;
+
+  // Build series
+  const cumul = [], rolling = [];
+  let cumCount = 0;
+  chrono.forEach((d, idx) => {
+    const hit = type === 'wb' ? d.wb.includes(number) : d.pb === number;
+    if (hit) cumCount++;
+    cumul.push(cumCount);
+    const winStart = Math.max(0, idx - ROLL + 1);
+    rolling.push(
+      chrono.slice(winStart, idx+1).filter(
+        wd => type === 'wb' ? wd.wb.includes(number) : wd.pb === number
+      ).length
+    );
+  });
+
+  const PAD = { top:16, right:16, bottom:36, left:46 };
+  const CH  = 180;
+  const cW  = svg.parentElement.clientWidth || 860;
+  const svgW = cW, svgH = CH + PAD.top + PAD.bottom;
+  const chartW = svgW - PAD.left - PAD.right;
+
+  svg.setAttribute('viewBox', `0 0 ${svgW} ${svgH}`);
+  svg.setAttribute('width', svgW);
+  svg.setAttribute('height', svgH);
+
+  const maxCumul = Math.max(...cumul, 1);
+  const maxRoll  = Math.max(...rolling, ROLL);
+
+  const xPos  = i  => PAD.left + (i / (total-1)) * chartW;
+  const yC    = v  => PAD.top + CH - (v / maxCumul) * CH;
+  const yR    = v  => PAD.top + CH - (v / maxRoll)  * CH;
+
+  // Gridlines + Y labels
+  [0,.25,.5,.75,1].forEach(f => {
+    const y = PAD.top + CH - f*CH;
+    svg.appendChild(svgEl('line',{x1:PAD.left,x2:svgW-PAD.right,y1:y,y2:y,stroke:'#f3f4f6','stroke-width':1}));
+    svg.appendChild(svgEl('text',{x:PAD.left-5,y:y+4,'text-anchor':'end','font-size':9,fill:'#9ca3af','font-family':'inherit'},Math.round(f*maxCumul)));
+  });
+  svg.appendChild(svgEl('line',{x1:PAD.left,x2:PAD.left,y1:PAD.top,y2:PAD.top+CH,stroke:'#e5e7eb','stroke-width':1}));
+
+  // X-axis labels — every ~100 draws (up to 6 labels)
+  const step = Math.max(1, Math.floor(total/6));
+  for (let i=0; i<total; i+=step) {
+    svg.appendChild(svgEl('text',{x:xPos(i),y:svgH-6,'text-anchor':'middle','font-size':9,fill:'#9ca3af','font-family':'inherit'},chrono[i].date.slice(0,7)));
+  }
+
+  // Rolling line (amber, dashed)
+  if (total > 1) {
+    svg.appendChild(svgEl('polyline',{
+      points: rolling.map((v,i) => `${xPos(i)},${yR(v)}`).join(' '),
+      fill:'none', stroke:'rgba(245,158,11,0.55)', 'stroke-width':2,
+      'stroke-dasharray':'5 3', 'stroke-linejoin':'round'
+    }));
+  }
+
+  // Cumulative line (red, solid)
+  if (total > 1) {
+    svg.appendChild(svgEl('polyline',{
+      points: cumul.map((v,i) => `${xPos(i)},${yC(v)}`).join(' '),
+      fill:'none', stroke:'#e52b36', 'stroke-width':2.5, 'stroke-linejoin':'round'
+    }));
+  }
+
+  // Dots on cumulative line where this number appeared
+  chrono.forEach((d, i) => {
+    const hit = type === 'wb' ? d.wb.includes(number) : d.pb === number;
+    if (hit) {
+      svg.appendChild(svgEl('circle',{cx:xPos(i),cy:yC(cumul[i]),r:3.5,fill:'#e52b36',stroke:'white','stroke-width':1.5}));
+    }
+  });
+
+  // Invisible full-width overlay for tooltip
+  const overlay = svgEl('rect',{x:PAD.left,y:PAD.top,width:chartW,height:CH,fill:'transparent'});
+  overlay.style.cursor = 'crosshair';
+  overlay.addEventListener('mousemove', e => {
+    const svgRect = svg.getBoundingClientRect();
+    const mouseX  = e.clientX - svgRect.left - PAD.left;
+    const idx     = Math.max(0, Math.min(total-1, Math.round((mouseX / chartW) * (total-1))));
+    const d       = chrono[idx];
+    const hit     = type === 'wb' ? d.wb.includes(number) : d.pb === number;
+    showTip(e,
+      `<strong>${d.date}</strong><br>` +
+      `Cumulative: <strong>${cumul[idx]}</strong> &nbsp;|&nbsp; ` +
+      `Rolling-${ROLL}: <strong>${rolling[idx]}</strong>` +
+      (hit ? ` &nbsp;<span style="color:#fbbf24">● appeared</span>` : '')
+    );
+  });
+  overlay.addEventListener('mouseleave', hideTip);
+  svg.appendChild(overlay);
+}
+
+// ── Generic horizontal bar chart ──────────────────────────────────────────
+function drawHorizBarChart(svgId, items, opts = {}) {
+  const svg = document.getElementById(svgId);
+  if (!svg) return;
+  svg.innerHTML = '';
+  const { labelW = 60, barH = 22, gap = 6, padTop = 8, padRight = 60 } = opts;
+  const cW = svg.parentElement.clientWidth || 900;
+  const barAreaW = cW - labelW - padRight - 8;
+  const svgH = padTop + items.length * (barH + gap);
+  svg.setAttribute('viewBox', `0 0 ${cW} ${svgH}`);
+  svg.setAttribute('width', cW);
+  svg.setAttribute('height', svgH);
+  const maxVal = Math.max(...items.map(it => it.val), 1);
+
+  items.forEach((item, idx) => {
+    const y  = padTop + idx * (barH + gap);
+    const bW = Math.max((item.val / maxVal) * barAreaW, item.val > 0 ? 2 : 0);
+    svg.appendChild(svgEl('text',{x:labelW-6, y:y+barH/2+4, 'text-anchor':'end', 'font-size':11, fill:'#6b7280', 'font-family':'inherit'}, item.label));
+    const rect = svgEl('rect',{x:labelW, y, width:bW, height:barH, fill:item.fill||'#e52b36', rx:3});
+    if (item.tip) {
+      rect.addEventListener('mousemove', e => showTip(e, item.tip));
+      rect.addEventListener('mouseleave', hideTip);
+    }
+    svg.appendChild(rect);
+    svg.appendChild(svgEl('text',{x:labelW+bW+6, y:y+barH/2+4, 'font-size':11, 'font-weight':600, fill:'#374151', 'font-family':'inherit'}, item.val));
+  });
+}
+
+// ── Trend picker helpers ───────────────────────────────────────────────────
+function updateTrendPickerBounds() {
+  const max = trendType === 'wb' ? 69 : 26;
+  trendNumber = Math.max(1, Math.min(trendNumber, max));
+  document.getElementById('trend-display').textContent = trendNumber;
+}
+
+// ── Event listeners ───────────────────────────────────────────────────────
+olderBtn.addEventListener('click', () => {
+  if (currentIndex < allDraws.length - 1) {
+    currentIndex++;
+    if (!isMappingAll) renderDraw(currentIndex);
+    select.value = currentIndex;
+  }
+});
+newerBtn.addEventListener('click', () => {
+  if (currentIndex > 0) {
+    currentIndex--;
+    if (!isMappingAll) renderDraw(currentIndex);
+    select.value = currentIndex;
+  }
+});
+select.addEventListener('change', e => {
+  currentIndex = parseInt(e.target.value);
+  if (isMappingAll) {
+    isMappingAll = false;
+    mapAllBtn.textContent = 'Map All Draws';
+    mapAllBtn.classList.remove('active');
+  }
+  renderDraw(currentIndex);
+});
+mapAllBtn.addEventListener('click', e => {
+  isMappingAll = !isMappingAll;
+  if (isMappingAll) {
+    e.target.textContent = 'Show Single Draw';
+    e.target.classList.add('active');
+    renderAllDraws();
+  } else {
+    e.target.textContent = 'Map All Draws';
+    e.target.classList.remove('active');
+    renderDraw(currentIndex);
+  }
+});
+
+// Tab clicks
+document.getElementById('tab-bar').addEventListener('click', e => {
+  const btn = e.target.closest('.tab-btn');
+  if (!btn) return;
+  switchTab(btn.dataset.tab);
+  renderActivePanel();
+});
+
+// Hot & Cold lookback
+document.getElementById('lookback-select').addEventListener('change', e => {
+  hotcoldLookback = e.target.value;
+  renderHotCold(allDraws);
+});
+
+// Trend picker
+document.getElementById('trend-prev').addEventListener('click', () => {
+  trendNumber--;
+  updateTrendPickerBounds();
+  renderNumberTrend(allDraws, trendNumber, trendType);
+});
+document.getElementById('trend-next').addEventListener('click', () => {
+  trendNumber++;
+  updateTrendPickerBounds();
+  renderNumberTrend(allDraws, trendNumber, trendType);
+});
+document.getElementById('trend-wb-btn').addEventListener('click', () => {
+  trendType = 'wb';
+  document.getElementById('trend-wb-btn').classList.add('active');
+  document.getElementById('trend-pb-btn').classList.remove('active');
+  updateTrendPickerBounds();
+  renderNumberTrend(allDraws, trendNumber, trendType);
+});
+document.getElementById('trend-pb-btn').addEventListener('click', () => {
+  trendType = 'pb';
+  document.getElementById('trend-pb-btn').classList.add('active');
+  document.getElementById('trend-wb-btn').classList.remove('active');
+  updateTrendPickerBounds();
+  renderNumberTrend(allDraws, trendNumber, trendType);
+});
+
+// Responsive redraw
+window.addEventListener('resize', () => {
+  if (!allDraws.length) return;
+  if (isMappingAll) renderAllDraws(); else renderDraw(currentIndex);
+});
+
+// ── Start ─────────────────────────────────────────────────────────────────
+initData();
 </script>
 </body>
 </html>
