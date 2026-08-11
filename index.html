@@ -455,7 +455,7 @@
 </head>
 <body>
 
-<h1 id="main-title">Powerball Analytics</h1>
+<h1 id="main-title">NJ Lottery Analytics</h1>
 <div class="game-selector">
   <button class="game-btn active" data-game="powerball">Powerball</button>
   <button class="game-btn" data-game="pick3">Play 3</button>
@@ -621,6 +621,35 @@
 <div id="chart-tooltip"></div>
 
 <script>
+// ── Game Configuration ──────────────────────────────────────────────────────────
+const GAMES = {
+  powerball: {
+    id: 'powerball',
+    name: 'Powerball',
+    wbMin: 1, wbMax: 69, pbMin: 1, pbMax: 26,
+    wbCount: 5, hasPb: true,
+    title: 'NJ Lottery Analytics - Powerball', subtitle: 'Interactive visualizer with historical pattern analysis',
+    formatDesc: 'Current format · 5 of 69 + PB 1–26'
+  },
+  pick3: {
+    id: 'pick3',
+    name: 'Pick 3',
+    wbMin: 0, wbMax: 9, pbMin: 0, pbMax: 0,
+    wbCount: 3, hasPb: false,
+    title: 'NJ Pick 3 Analytics', subtitle: 'Historical numbers analysis',
+    formatDesc: 'Pick 3 · 3 Digits (0–9)'
+  },
+  pick4: {
+    id: 'pick4',
+    name: 'Pick 4',
+    wbMin: 0, wbMax: 9, pbMin: 0, pbMax: 0,
+    wbCount: 4, hasPb: false,
+    title: 'NJ Pick 4 Analytics', subtitle: 'Historical numbers analysis',
+    formatDesc: 'Pick 4 · 4 Digits (0–9)'
+  }
+};
+let activeGame = GAMES.powerball;
+
 // ── State ────────────────────────────────────────────────────────────────
 let allDraws       = [];
 let currentIndex   = 0;
