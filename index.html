@@ -301,6 +301,144 @@
     box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     line-height: 1.6;
   }
+
+  /* ── Smart Pick ─────────────────────────────────────────────────────── */
+  .pick-header {
+    text-align: center;
+    margin-bottom: 8px;
+  }
+  .pick-header h3 {
+    font-size: 1.15rem; font-weight: 800; margin: 0 0 4px;
+    background: linear-gradient(135deg,#a78bfa,#60a5fa);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .pick-header p {
+    font-size: 0.75rem; color: #9ca3af; margin: 0;
+  }
+  .pick-balls {
+    display: flex; gap: 14px;
+    justify-content: center; align-items: center;
+    flex-wrap: wrap; margin: 22px 0 18px;
+  }
+  @keyframes ballIn {
+    from { opacity:0; transform: scale(.2) rotate(-30deg); }
+    to   { opacity:1; transform: scale(1)  rotate(0deg); }
+  }
+  .pick-ball {
+    width: 60px; height: 60px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.25rem; font-weight: 800; color: #fff;
+    background: radial-gradient(circle at 35% 30%, rgba(255,255,255,.35) 0%, transparent 55%),
+                linear-gradient(145deg,#f59e0b,#d97706);
+    box-shadow: 0 6px 22px rgba(245,158,11,.45), inset 0 -4px 8px rgba(0,0,0,.25);
+    animation: ballIn .45s cubic-bezier(.34,1.56,.64,1) both;
+    position: relative;
+  }
+  .pick-ball.pb {
+    background: radial-gradient(circle at 35% 30%, rgba(255,255,255,.35) 0%, transparent 55%),
+                linear-gradient(145deg,#ef4444,#b91c1c);
+    box-shadow: 0 6px 22px rgba(239,68,68,.45), inset 0 -4px 8px rgba(0,0,0,.25);
+  }
+  .pick-ball:nth-child(1){animation-delay:.04s}
+  .pick-ball:nth-child(2){animation-delay:.12s}
+  .pick-ball:nth-child(3){animation-delay:.20s}
+  .pick-ball:nth-child(4){animation-delay:.28s}
+  .pick-ball:nth-child(5){animation-delay:.36s}
+  .pick-ball:nth-child(7){animation-delay:.50s}
+  .pick-sep {
+    font-size: 1.6rem; font-weight: 700;
+    color: rgba(255,255,255,.25); margin: 0 2px;
+  }
+  .pb-label {
+    font-size: .62rem; font-weight: 700;
+    color: rgba(255,255,255,.7); letter-spacing: .05em;
+    position: absolute; bottom: -18px; left: 50%;
+    transform: translateX(-50%); white-space: nowrap;
+  }
+  .pick-actions {
+    display: flex; gap: 12px;
+    justify-content: center; margin: 28px 0 24px;
+  }
+  .pick-btn {
+    padding: 10px 26px; border: none; border-radius: 999px;
+    font-size: .92rem; font-weight: 700; cursor: pointer;
+    transition: all .22s; font-family: inherit; letter-spacing: .02em;
+  }
+  .pick-btn-gen {
+    background: linear-gradient(135deg,#7c3aed,#4f46e5);
+    color: #fff;
+    box-shadow: 0 4px 18px rgba(124,58,237,.4);
+  }
+  .pick-btn-gen:hover { transform: translateY(-3px); box-shadow: 0 8px 28px rgba(124,58,237,.55); }
+  .pick-btn-copy {
+    background: rgba(255,255,255,.08);
+    color: #e5e7eb;
+    border: 1.5px solid rgba(255,255,255,.18);
+  }
+  .pick-btn-copy:hover { background: rgba(255,255,255,.15); transform: translateY(-3px); }
+  .pick-btn-copy.copied { background: #10b981; border-color: #10b981; color: #fff; }
+  .pick-section-title {
+    font-size: .7rem; font-weight: 800; color: #9ca3af;
+    text-transform: uppercase; letter-spacing: 1.2px;
+    margin: 20px 0 10px;
+  }
+  .pick-card {
+    background: rgba(255,255,255,.04);
+    border: 1px solid rgba(255,255,255,.07);
+    border-radius: 14px; padding: 14px 16px;
+  }
+  .pick-row {
+    display: flex; align-items: flex-start;
+    gap: 12px; margin-bottom: 10px;
+  }
+  .pick-row:last-child { margin-bottom: 0; }
+  .mini-ball {
+    min-width: 34px; height: 34px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .82rem; font-weight: 800; color: #fff; flex-shrink: 0;
+    background: linear-gradient(145deg,#f59e0b,#d97706);
+    box-shadow: 0 3px 10px rgba(245,158,11,.35);
+  }
+  .mini-ball.pb {
+    background: linear-gradient(145deg,#ef4444,#b91c1c);
+    box-shadow: 0 3px 10px rgba(239,68,68,.35);
+  }
+  .pick-reason {
+    font-size: .83rem; color: #d1d5db; line-height: 1.5;
+  }
+  .rtag {
+    display: inline-block; font-size: .68rem; font-weight: 800;
+    padding: 1px 8px; border-radius: 999px;
+    margin-right: 6px; letter-spacing: .04em; vertical-align: middle;
+  }
+  .rtag-hot     { background: rgba(239,68,68,.2);  color: #fca5a5; }
+  .rtag-overdue { background: rgba(245,158,11,.2); color: #fcd34d; }
+  .rtag-freq    { background: rgba(59,130,246,.2); color: #93c5fd; }
+  .rtag-pair    { background: rgba(139,92,246,.2); color: #c4b5fd; }
+  .rtag-day     { background: rgba(16,185,129,.2); color: #6ee7b7; }
+  .rtag-pb      { background: rgba(255,255,255,.1);color: #e5e7eb; }
+  .pick-weights {
+    display: flex; flex-direction: column; gap: 7px; margin-top: 4px;
+  }
+  .pw-row {
+    display: flex; align-items: center; gap: 10px; font-size: .78rem;
+  }
+  .pw-label { color: #9ca3af; min-width: 160px; }
+  .pw-bar-bg {
+    flex: 1; height: 6px; border-radius: 999px;
+    background: rgba(255,255,255,.07);
+  }
+  .pw-bar { height: 6px; border-radius: 999px; }
+  .pw-pct { color: #e5e7eb; font-weight: 700; min-width: 36px; text-align: right; }
+  .pick-disclaimer {
+    font-size: .72rem; color: #6b7280;
+    margin-top: 18px; line-height: 1.55;
+    padding: 10px 14px;
+    background: rgba(255,255,255,.03);
+    border-radius: 10px;
+    border: 1px dashed rgba(255,255,255,.06);
+  }
 </style>
 </head>
 <body>
@@ -355,6 +493,7 @@
       <button class="tab-btn" data-tab="powerplay">⚡ Power Play</button>
       <button class="tab-btn" data-tab="daypattern">📅 Day Pattern</button>
       <button class="tab-btn" data-tab="trend">📈 Trend</button>
+      <button class="tab-btn" data-tab="pick" style="background:linear-gradient(135deg,rgba(124,58,237,.5),rgba(79,70,229,.5));color:#c4b5fd;border:1px solid rgba(124,58,237,.4)">🎯 Smart Pick</button>
     </div>
   </div>
 
@@ -451,6 +590,11 @@
         <span><span class="legend-line" style="background:#f59e0b;opacity:0.7;"></span>Rolling 30-draw count</span>
       </div>
       <div class="chart-container"><svg id="trend-svg" class="chart-svg"></svg></div>
+    </div>
+
+    <!-- ⑧ Smart Pick -->
+    <div class="tab-panel" id="panel-pick">
+      <div id="pick-content"></div>
     </div>
 
   </div><!-- /.tab-panels -->
@@ -769,6 +913,7 @@ function renderActivePanel() {
     case 'powerplay':  renderPowerPlay(allDraws); break;
     case 'daypattern': renderDayOfWeek(allDraws); break;
     case 'trend':      renderNumberTrend(allDraws, trendNumber, trendType); break;
+    case 'pick':       renderSmartPick(); break;
   }
 }
 
@@ -1303,6 +1448,274 @@ window.addEventListener('resize', () => {
 
 // ── Start ─────────────────────────────────────────────────────────────────
 initData();
+
+// ── ⑧ Smart Pick ──────────────────────────────────────────────────────────
+function generateSmartPick(draws) {
+  if (!draws.length) return null;
+
+  const today  = new Date().getDay();      // 0=Sun … 6=Sat
+  const recent = draws.slice(0, 30);
+  const N      = draws.length;
+
+  // ① Overall historical frequency (indices 1-69 used)
+  const freq = new Array(70).fill(0);
+  draws.forEach(d => d.wb.forEach(n => freq[n]++));
+
+  // ② Hot score: frequency within last-30 draws
+  const hot = new Array(70).fill(0);
+  recent.forEach(d => d.wb.forEach(n => hot[n]++));
+
+  // ③ Gap: draw-index of most-recent appearance; higher index = more overdue
+  const lastSeen = new Array(70).fill(N);
+  draws.forEach((d, i) => d.wb.forEach(n => { if (lastSeen[n] === N) lastSeen[n] = i; }));
+
+  // ④ Day-of-week frequency for today's weekday
+  const dayDraws = draws.filter(d => new Date(d.date + 'T12:00:00').getDay() === today);
+  const dayFreq  = new Array(70).fill(0);
+  dayDraws.forEach(d => d.wb.forEach(n => dayFreq[n]++));
+
+  // ⑤ Pair counts (for pair-affinity scoring during iterative selection)
+  const pairC = {};
+  draws.forEach(d => {
+    const s = [...d.wb].sort((a,b)=>a-b);
+    for (let i=0;i<s.length;i++)
+      for (let j=i+1;j<s.length;j++) { const k=`${s[i]}-${s[j]}`; pairC[k]=(pairC[k]||0)+1; }
+  });
+
+  // Min-max normalise an array (slot 0 ignored)
+  const norm = arr => {
+    const vals = arr.slice(1);
+    const mx = Math.max(...vals, 1e-9), mn = Math.min(...vals);
+    if (mx === mn) return arr.map(() => .5);
+    return arr.map(v => (v - mn) / (mx - mn));
+  };
+
+  const nFreq = norm(freq);
+  const nHot  = norm(hot);
+  const nGap  = lastSeen.map(g => g / N);           // higher gap → higher score
+  const nDay  = dayDraws.length > 3 ? norm(dayFreq) : new Array(70).fill(0.5);
+
+  // Model weights
+  const W = { freq:.25, gap:.25, hot:.20, pair:.20, day:.10 };
+
+  const selected = [], reasons = [];
+
+  for (let pick = 0; pick < 5; pick++) {
+    const excl = new Set(selected);
+
+    // Pair-affinity scores relative to already-selected numbers
+    const pairScores = new Array(70).fill(0);
+    if (selected.length) {
+      for (let n = 1; n <= 69; n++) {
+        if (excl.has(n)) continue;
+        selected.forEach(s => {
+          const k = `${Math.min(n,s)}-${Math.max(n,s)}`;
+          pairScores[n] += pairC[k] || 0;
+        });
+        pairScores[n] /= selected.length;
+      }
+    }
+    const maxPs = Math.max(...pairScores.slice(1), 1e-9);
+    const nPair  = pairScores.map(v => v / maxPs);
+
+    // Composite weight per ball
+    const weights = new Array(70).fill(0);
+    for (let n = 1; n <= 69; n++) {
+      if (excl.has(n)) continue;
+      weights[n] = W.freq*nFreq[n] + W.gap*nGap[n] + W.hot*nHot[n]
+                 + W.pair*nPair[n] + W.day*nDay[n];
+    }
+
+    // Weighted-random draw
+    const total = weights.reduce((a,b)=>a+b, 0);
+    let rand = Math.random() * total, chosen = 1;
+    for (let n = 1; n <= 69; n++) { rand -= weights[n]; if (rand <= 0) { chosen = n; break; } }
+    chosen = Math.max(1, Math.min(69, chosen));
+    selected.push(chosen);
+
+    // Determine the primary reason for this pick
+    const contrib = {
+      hot:  W.hot  * nHot[chosen],
+      gap:  W.gap  * nGap[chosen],
+      freq: W.freq * nFreq[chosen],
+      pair: W.pair * nPair[chosen],
+      day:  W.day  * nDay[chosen],
+    };
+    const primary = Object.entries(contrib).sort((a,b)=>b[1]-a[1])[0][0];
+    const dayName = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][today];
+    const detail = {
+      hot:  `appeared ${hot[chosen]}× in last 30 draws`,
+      gap:  lastSeen[chosen] === N ? `has never been drawn — highly overdue` : `last seen ${lastSeen[chosen]} draws ago`,
+      freq: `drawn ${freq[chosen]}× across all ${N} draws`,
+      pair: selected.length > 1 ? `frequently pairs with ${selected.slice(0,-1).join(', ')}` : `strong historical pair affinity`,
+      day:  dayDraws.length > 3 ? `appears ${dayFreq[chosen]}× on ${dayName}s` : `historical average (few ${dayName} draws)`,
+    };
+    reasons.push({ n: chosen, primary, detail: detail[primary] });
+  }
+
+  selected.sort((a,b)=>a-b);
+
+  // Powerball (1-26): 40% frequency + 60% gap
+  const pbFreq    = new Array(27).fill(0);
+  const pbLastSeen = new Array(27).fill(N);
+  draws.forEach((d, i) => {
+    if (d.pb >= 1 && d.pb <= 26) {
+      pbFreq[d.pb]++;
+      if (pbLastSeen[d.pb] === N) pbLastSeen[d.pb] = i;
+    }
+  });
+  const nPbFreq = norm(pbFreq);
+  const nPbGap  = pbLastSeen.map(g => g / N);
+  const pbW = new Array(27).fill(0);
+  for (let n=1;n<=26;n++) pbW[n] = .4*nPbFreq[n] + .6*nPbGap[n];
+  const pbTotal = pbW.reduce((a,b)=>a+b, 0);
+  let pbRand = Math.random() * pbTotal, pb = 1;
+  for (let n=1;n<=26;n++) { pbRand -= pbW[n]; if (pbRand <= 0) { pb = n; break; } }
+  pb = Math.max(1, Math.min(26, pb));
+
+  const dayName = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][today];
+  return { wb: selected, pb, reasons, N, dayName, dayDrawCount: dayDraws.length };
+}
+
+function renderSmartPick() {
+  const container = document.getElementById('pick-content');
+  container.innerHTML = '';
+
+  if (!allDraws.length) {
+    const msg = document.createElement('p');
+    msg.className = 'panel-subtitle';
+    msg.style.color = '#9ca3af';
+    msg.textContent = 'No draw data loaded yet.';
+    container.appendChild(msg);
+    return;
+  }
+
+  const pick = generateSmartPick(allDraws);
+
+  // Header
+  const hdr = document.createElement('div');
+  hdr.className = 'pick-header';
+  hdr.innerHTML = `<h3>✨ AI Smart Pick</h3>
+    <p>Weighted statistical model · ${pick.N} historical draws · Today: ${pick.dayName}</p>`;
+  container.appendChild(hdr);
+
+  // Ball display
+  const ballsDiv = document.createElement('div');
+  ballsDiv.className = 'pick-balls';
+  pick.wb.forEach(n => {
+    const b = document.createElement('div');
+    b.className = 'pick-ball'; b.textContent = n;
+    ballsDiv.appendChild(b);
+  });
+  const sep = document.createElement('span');
+  sep.className = 'pick-sep'; sep.textContent = '+';
+  ballsDiv.appendChild(sep);
+  const pbDiv = document.createElement('div');
+  pbDiv.className = 'pick-ball pb';
+  pbDiv.innerHTML = `${pick.pb}<span class="pb-label">PB</span>`;
+  ballsDiv.appendChild(pbDiv);
+  container.appendChild(ballsDiv);
+
+  // Action buttons
+  const acts = document.createElement('div');
+  acts.className = 'pick-actions';
+
+  const genBtn = document.createElement('button');
+  genBtn.className = 'pick-btn pick-btn-gen';
+  genBtn.textContent = '🔄 Generate New Pick';
+  genBtn.onclick = renderSmartPick;
+
+  const copyBtn = document.createElement('button');
+  copyBtn.className = 'pick-btn pick-btn-copy';
+  copyBtn.textContent = '📋 Copy Pick';
+  const copyText = `${pick.wb.join(' ')} PB: ${pick.pb}`;
+  copyBtn.onclick = () => {
+    const doFallback = () => {
+      const ta = document.createElement('textarea');
+      ta.value = copyText; document.body.appendChild(ta);
+      ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+    };
+    const flash = () => {
+      copyBtn.textContent = '✅ Copied!'; copyBtn.classList.add('copied');
+      setTimeout(() => { copyBtn.textContent = '📋 Copy Pick'; copyBtn.classList.remove('copied'); }, 2200);
+    };
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(copyText).then(flash).catch(() => { doFallback(); flash(); });
+    } else { doFallback(); flash(); }
+  };
+  acts.appendChild(genBtn); acts.appendChild(copyBtn);
+  container.appendChild(acts);
+
+  // Why these numbers
+  const reasonTitle = document.createElement('p');
+  reasonTitle.className = 'pick-section-title';
+  reasonTitle.textContent = '📊 Why These Numbers?';
+  container.appendChild(reasonTitle);
+
+  const card = document.createElement('div');
+  card.className = 'pick-card';
+
+  const tagMap = {
+    hot:  ['rtag-hot',     '🔥 Hot Streak'],
+    gap:  ['rtag-overdue', '⏳ Overdue'],
+    freq: ['rtag-freq',    '📈 Frequency'],
+    pair: ['rtag-pair',    '🔗 Pair Affinity'],
+    day:  ['rtag-day',     '📅 Day Pattern'],
+  };
+
+  pick.reasons.forEach(({ n, primary, detail }) => {
+    const [cls, label] = tagMap[primary];
+    const row = document.createElement('div'); row.className = 'pick-row';
+    const mb  = document.createElement('div'); mb.className = 'mini-ball'; mb.textContent = n;
+    const rt  = document.createElement('div'); rt.className = 'pick-reason';
+    rt.innerHTML = `<span class="rtag ${cls}">${label}</span><strong>${n}</strong> — ${detail}`;
+    row.appendChild(mb); row.appendChild(rt);
+    card.appendChild(row);
+  });
+
+  // Powerball row
+  const pbRow = document.createElement('div'); pbRow.className = 'pick-row';
+  const pbMb  = document.createElement('div'); pbMb.className = 'mini-ball pb'; pbMb.textContent = pick.pb;
+  const pbRt  = document.createElement('div'); pbRt.className = 'pick-reason';
+  pbRt.innerHTML = `<span class="rtag rtag-pb">⭐ Powerball</span><strong>${pick.pb}</strong> — frequency + overdue gap model (range 1–26)`;
+  pbRow.appendChild(pbMb); pbRow.appendChild(pbRt);
+  card.appendChild(pbRow);
+  container.appendChild(card);
+
+  // Model Weights breakdown
+  const wTitle = document.createElement('p');
+  wTitle.className = 'pick-section-title';
+  wTitle.style.marginTop = '20px';
+  wTitle.textContent = '⚙️ Model Weights';
+  container.appendChild(wTitle);
+
+  const wCard = document.createElement('div');
+  wCard.className = 'pick-card';
+  const pwDiv = document.createElement('div');
+  pwDiv.className = 'pick-weights';
+  [
+    ['📈 Historical Frequency', 25, '#3b82f6'],
+    ['⏳ Gap / Overdue',        25, '#f59e0b'],
+    ['🔥 Hot Streak (last 30)', 20, '#ef4444'],
+    ['🔗 Pair Affinity',        20, '#8b5cf6'],
+    ['📅 Day-of-Week Pattern',  10, '#10b981'],
+  ].forEach(([label, pct, color]) => {
+    const row = document.createElement('div'); row.className = 'pw-row';
+    row.innerHTML = `
+      <span class="pw-label">${label}</span>
+      <div class="pw-bar-bg"><div class="pw-bar" style="width:${pct*4}%;background:${color}"></div></div>
+      <span class="pw-pct">${pct}%</span>`;
+    pwDiv.appendChild(row);
+  });
+  wCard.appendChild(pwDiv);
+  container.appendChild(wCard);
+
+  // Disclaimer
+  const disc = document.createElement('p');
+  disc.className = 'pick-disclaimer';
+  disc.textContent = '⚠️ This is a statistical model based on historical patterns. Powerball is a random draw — past results do not predict future outcomes. Play responsibly.';
+  container.appendChild(disc);
+}
 </script>
 </body>
 </html>
