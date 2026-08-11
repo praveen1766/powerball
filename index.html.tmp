@@ -683,8 +683,8 @@ function buildGrid(id, max) {
     container.appendChild(cell);
   }
 }
-buildGrid('wb-grid', activeGame.wbMin, activeGame.wbMax);
-buildGrid('pb-grid', activeGame.pbMin, activeGame.pbMax);
+buildGrid('wb-grid', 69);
+buildGrid('pb-grid', 26);
 
 // ── Parsing helpers ───────────────────────────────────────────────────────
 function parseLine(line) {
@@ -779,8 +779,8 @@ async function initData() {
     if (
       d.date >= ERA_CUTOFF &&
       Array.isArray(d.wb) && d.wb.length >= 5 &&
-      d.wb.every(n => !isNaN(n) && n >= activeGame.wbMin && n <= activeGame.wbMax) &&
-      !isNaN(d.pb) && d.pb >= activeGame.pbMin && d.pb <= activeGame.pbMax &&
+      d.wb.every(n => !isNaN(n) && n >= 1 && n <= 69) &&
+      !isNaN(d.pb) && d.pb >= 1 && d.pb <= 26 &&
       !seen.has(d.date)
     ) {
       d.wb = d.wb.slice(0, 5);
@@ -939,26 +939,25 @@ function renderActivePanel() {
 function renderFrequencyChart(draws, highlightedWb, highlightedPb, isAllMode) {
   document.getElementById('freq-legend').style.display = isAllMode ? 'none' : 'flex';
   const wbC = {}, pbC = {};
-  for (let i = activeGame.wbMin; i <= activeGame.wbMax; i++) wbC[i] = 0;
-  for (let i = activeGame.pbMin; i <= activeGame.pbMax; i++) pbC[i] = 0;
+  for (let i = 1; i <= 69; i++) wbC[i] = 0;
+  for (let i = 1; i <= 26; i++) pbC[i] = 0;
   draws.forEach(d => {
-    d.wb.forEach(n => { if (n>=activeGame.wbMin&&n<=activeGame.wbMax) wbC[n]++; });
-    if (d.pb!=null && d.pb>=activeGame.pbMin&&d.pb<=activeGame.pbMax) pbC[d.pb]++;
+    d.wb.forEach(n => { if (n>=1&&n<=69) wbC[n]++; });
+    if (d.pb>=1&&d.pb<=26) pbC[d.pb]++;
   });
-  drawBarChart('wb-freq-svg', wbC, activeGame.wbMin, activeGame.wbMax, highlightedWb || [], '#e52b36', isAllMode);
-  if(activeGame.hasPb) drawBarChart('pb-freq-svg', pbC, activeGame.pbMin, activeGame.pbMax, highlightedPb != null ? [highlightedPb] : [], '#f59e0b', isAllMode);
+  drawBarChart('wb-freq-svg', wbC, 69, highlightedWb || [], '#e52b36', isAllMode);
+  drawBarChart('pb-freq-svg', pbC, 26, highlightedPb != null ? [highlightedPb] : [], '#f59e0b', isAllMode);
 }
 
-function drawBarChart(svgId, counts, minNum, maxNum, highlighted, hiColor, isAllMode) {
+function drawBarChart(svgId, counts, maxNum, highlighted, hiColor, isAllMode) {
   const svg = document.getElementById(svgId);
   svg.innerHTML = '';
   const PAD = { top:14, right:10, bottom:30, left:38 };
   const CH  = 170;
   const cW  = svg.parentElement.clientWidth || 860;
   const gap = 2;
-  const numItems = maxNum - minNum + 1;
-  const barW = Math.max(3, Math.floor((cW - PAD.left - PAD.right - gap*(numItems-1)) / numItems));
-  const svgW = PAD.left + numItems*barW + (numItems-1)*gap + PAD.right;
+  const barW = Math.max(3, Math.floor((cW - PAD.left - PAD.right - gap*(maxNum-1)) / maxNum));
+  const svgW = PAD.left + maxNum*barW + (maxNum-1)*gap + PAD.right;
   const svgH = CH + PAD.top + PAD.bottom;
   svg.setAttribute('viewBox', `0 0 ${svgW} ${svgH}`);
   svg.setAttribute('width',  Math.max(svgW, cW));
@@ -972,11 +971,10 @@ function drawBarChart(svgId, counts, minNum, maxNum, highlighted, hiColor, isAll
   });
   svg.appendChild(svgEl('line', {x1:PAD.left-1, x2:PAD.left-1, y1:PAD.top, y2:PAD.top+CH, stroke:'#e5e7eb', 'stroke-width':1}));
 
-  for (let i = minNum; i <= maxNum; i++) {
+  for (let i = 1; i <= maxNum; i++) {
     const cnt = counts[i] || 0;
     const bH  = (cnt / maxC) * CH;
-    const idx = i - minNum;
-    const x   = PAD.left + idx*(barW+gap);
+    const x   = PAD.left + (i-1)*(barW+gap);
     const y   = PAD.top + CH - bH;
     const isActive = highlighted.includes(i);
     const fill = isActive
@@ -1004,8 +1002,8 @@ function renderHotCold(draws) {
   const n  = hotcoldLookback === 'all' ? draws.length : parseInt(hotcoldLookback);
   const sub = draws.slice(0, Math.min(n, draws.length));
   const wbC = {}, pbC = {};
-  for (let i = activeGame.wbMin; i <= activeGame.wbMax; i++) wbC[i]=0;
-  for (let i = activeGame.pbMin; i <= activeGame.pbMax; i++) pbC[i]=0;
+  for (let i=1;i<=69;i++) wbC[i]=0;
+  for (let i=1;i<=26;i++) pbC[i]=0;
   sub.forEach(d => {
     d.wb.forEach(x => wbC[x]++);
     if (d.pb>=1&&d.pb<=26) pbC[d.pb]++;
@@ -1140,7 +1138,7 @@ function renderGapAnalysis(draws) {
 
   // White balls — top 30 most overdue
   const wbGaps = [];
-  for (let i = activeGame.wbMin; i <= activeGame.wbMax; i++) {
+  for (let i=1;i<=69;i++) {
     const gap = (i in wbLastSeen) ? wbLastSeen[i] : draws.length;
     const lastDate = (i in wbLastSeen) ? draws[wbLastSeen[i]].date : 'Never';
     wbGaps.push({ label: `#${i}`, val: gap, lastDate });
@@ -1156,7 +1154,7 @@ function renderGapAnalysis(draws) {
 
   // Powerball — all 26
   const pbGaps = [];
-  for (let i = activeGame.pbMin; i <= activeGame.pbMax; i++) {
+  for (let i=1;i<=26;i++) {
     const gap = (i in pbLastSeen) ? pbLastSeen[i] : draws.length;
     const lastDate = (i in pbLastSeen) ? draws[pbLastSeen[i]].date : 'Never';
     pbGaps.push({ label: `#${i}`, val: gap, lastDate });
@@ -1378,8 +1376,7 @@ function drawHorizBarChart(svgId, items, opts = {}) {
 
 // ── Trend picker helpers ───────────────────────────────────────────────────
 function updateTrendPickerBounds() {
-  const max = trendType === 'wb' ? activeGame.wbMax : activeGame.pbMax;
-  const min = trendType === 'wb' ? activeGame.wbMin : activeGame.pbMin;
+  const max = trendType === 'wb' ? 69 : 26;
   trendNumber = Math.max(1, Math.min(trendNumber, max));
   document.getElementById('trend-display').textContent = trendNumber;
 }
@@ -1527,7 +1524,7 @@ function generateSmartPick(draws) {
     // Pair-affinity scores relative to already-selected numbers
     const pairScores = new Array(70).fill(0);
     if (selected.length) {
-      for (let n = activeGame.wbMin; n <= activeGame.wbMax; n++) {
+      for (let n = 1; n <= 69; n++) {
         if (excl.has(n)) continue;
         selected.forEach(s => {
           const k = `${Math.min(n,s)}-${Math.max(n,s)}`;
@@ -1541,7 +1538,7 @@ function generateSmartPick(draws) {
 
     // Composite weight per ball
     const weights = new Array(70).fill(0);
-    for (let n = activeGame.wbMin; n <= activeGame.wbMax; n++) {
+    for (let n = 1; n <= 69; n++) {
       if (excl.has(n)) continue;
       weights[n] = W.freq*nFreq[n] + W.gap*nGap[n] + W.hot*nHot[n]
                  + W.pair*nPair[n] + W.day*nDay[n];
@@ -1550,8 +1547,8 @@ function generateSmartPick(draws) {
     // Weighted-random draw
     const total = weights.reduce((a,b)=>a+b, 0);
     let rand = Math.random() * total, chosen = 1;
-    for (let n = activeGame.wbMin; n <= activeGame.wbMax; n++) { rand -= weights[n]; if (rand <= 0) { chosen = n; break; } }
-    chosen = Math.max(activeGame.wbMin, Math.min(activeGame.wbMax, chosen));
+    for (let n = 1; n <= 69; n++) { rand -= weights[n]; if (rand <= 0) { chosen = n; break; } }
+    chosen = Math.max(1, Math.min(69, chosen));
     selected.push(chosen);
 
     // Determine the primary reason for this pick
@@ -1580,7 +1577,7 @@ function generateSmartPick(draws) {
   const pbFreq    = new Array(27).fill(0);
   const pbLastSeen = new Array(27).fill(N);
   draws.forEach((d, i) => {
-    if (d.pb >= activeGame.pbMin && d.pb <= activeGame.pbMax) {
+    if (d.pb >= 1 && d.pb <= 26) {
       pbFreq[d.pb]++;
       if (pbLastSeen[d.pb] === N) pbLastSeen[d.pb] = i;
     }

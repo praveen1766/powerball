@@ -942,23 +942,22 @@ function renderFrequencyChart(draws, highlightedWb, highlightedPb, isAllMode) {
   for (let i = activeGame.wbMin; i <= activeGame.wbMax; i++) wbC[i] = 0;
   for (let i = activeGame.pbMin; i <= activeGame.pbMax; i++) pbC[i] = 0;
   draws.forEach(d => {
-    d.wb.forEach(n => { if (n>=activeGame.wbMin&&n<=activeGame.wbMax) wbC[n]++; });
-    if (d.pb!=null && d.pb>=activeGame.pbMin&&d.pb<=activeGame.pbMax) pbC[d.pb]++;
+    d.wb.forEach(n => { if (n>=1&&n<=69) wbC[n]++; });
+    if (d.pb>=1&&d.pb<=26) pbC[d.pb]++;
   });
-  drawBarChart('wb-freq-svg', wbC, activeGame.wbMin, activeGame.wbMax, highlightedWb || [], '#e52b36', isAllMode);
-  if(activeGame.hasPb) drawBarChart('pb-freq-svg', pbC, activeGame.pbMin, activeGame.pbMax, highlightedPb != null ? [highlightedPb] : [], '#f59e0b', isAllMode);
+  drawBarChart('wb-freq-svg', wbC, 69, highlightedWb || [], '#e52b36', isAllMode);
+  drawBarChart('pb-freq-svg', pbC, 26, highlightedPb != null ? [highlightedPb] : [], '#f59e0b', isAllMode);
 }
 
-function drawBarChart(svgId, counts, minNum, maxNum, highlighted, hiColor, isAllMode) {
+function drawBarChart(svgId, counts, maxNum, highlighted, hiColor, isAllMode) {
   const svg = document.getElementById(svgId);
   svg.innerHTML = '';
   const PAD = { top:14, right:10, bottom:30, left:38 };
   const CH  = 170;
   const cW  = svg.parentElement.clientWidth || 860;
   const gap = 2;
-  const numItems = maxNum - minNum + 1;
-  const barW = Math.max(3, Math.floor((cW - PAD.left - PAD.right - gap*(numItems-1)) / numItems));
-  const svgW = PAD.left + numItems*barW + (numItems-1)*gap + PAD.right;
+  const barW = Math.max(3, Math.floor((cW - PAD.left - PAD.right - gap*(maxNum-1)) / maxNum));
+  const svgW = PAD.left + maxNum*barW + (maxNum-1)*gap + PAD.right;
   const svgH = CH + PAD.top + PAD.bottom;
   svg.setAttribute('viewBox', `0 0 ${svgW} ${svgH}`);
   svg.setAttribute('width',  Math.max(svgW, cW));
@@ -975,8 +974,7 @@ function drawBarChart(svgId, counts, minNum, maxNum, highlighted, hiColor, isAll
   for (let i = minNum; i <= maxNum; i++) {
     const cnt = counts[i] || 0;
     const bH  = (cnt / maxC) * CH;
-    const idx = i - minNum;
-    const x   = PAD.left + idx*(barW+gap);
+    const x   = PAD.left + (i-1)*(barW+gap);
     const y   = PAD.top + CH - bH;
     const isActive = highlighted.includes(i);
     const fill = isActive

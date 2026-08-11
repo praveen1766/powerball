@@ -1,0 +1,36 @@
+name: Scrape NJ Lottery Data
+
+on:
+  schedule:
+    # Run every day at 11:30 PM EST (which is 03:30 AM UTC next day)
+    - cron: '30 3 * * *'
+  workflow_dispatch: # Allows manual trigger
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install cloudscraper beautifulsoup4
+        
+    - name: Run Scraper
+      run: python scraper.py
+      
+    - name: Commit and push changes
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add nj_data.json
+        # Only commit and push if there are changes
+        git diff --quiet && git diff --staged --quiet || (git commit -m "Update NJ Lottery Data [skip ci]" && git push)
