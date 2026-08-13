@@ -485,7 +485,7 @@
 
 <div class="grids-wrapper">
   <div class="grid-box">
-    <div class="grid-header">White Balls (1 – 69)</div>
+    <div class="grid-header" id="wb-grid-header">White Balls (1 – 69)</div>
     <div class="grid-wrapper">
       <svg class="lines-svg" id="svg-lines"></svg>
       <div class="grid white-balls" id="wb-grid"></div>
@@ -521,14 +521,14 @@
     <div class="tab-panel active" id="panel-freq">
       <div class="legend" id="freq-legend">
         <span><span class="legend-dot" style="background:#d1d5db;"></span>Not in draw</span>
-        <span><span class="legend-dot" style="background:#e52b36;"></span>White Ball (current draw)</span>
-        <span><span class="legend-dot" style="background:#f59e0b;"></span>Powerball (current draw)</span>
+        <span id="legend-wb-label"><span class="legend-dot" style="background:#e52b36;"></span>White Ball (current draw)</span>
+        <span id="legend-pb-label"><span class="legend-dot" style="background:#f59e0b;"></span>Powerball (current draw)</span>
       </div>
-      <p class="panel-subtitle">White Balls (1–69)</p>
+      <p class="panel-subtitle" id="freq-wb-subtitle">White Balls (1–69)</p>
       <div class="chart-container"><svg id="wb-freq-svg" class="chart-svg"></svg></div>
-      <hr class="chart-divider">
-      <p class="panel-subtitle">Powerball (1–26)</p>
-      <div class="chart-container"><svg id="pb-freq-svg" class="chart-svg"></svg></div>
+      <hr class="chart-divider" id="freq-pb-divider">
+      <p class="panel-subtitle" id="freq-pb-subtitle">Powerball (1–26)</p>
+      <div class="chart-container" id="freq-pb-container"><svg id="pb-freq-svg" class="chart-svg"></svg></div>
     </div>
 
     <!-- ② Hot & Cold -->
@@ -544,12 +544,12 @@
       </div>
       <div class="panel-row">
         <div class="panel-col">
-          <p class="panel-subtitle">🔥 Hottest White Balls (Top 10)</p>
+          <p class="panel-subtitle" id="hotcold-wb-hot-label">🔥 Hottest White Balls (Top 10)</p>
           <div class="ball-row" id="hot-wb-row"></div>
-          <p class="panel-subtitle">❄️ Coldest White Balls (Bottom 10)</p>
+          <p class="panel-subtitle" id="hotcold-wb-cold-label">❄️ Coldest White Balls (Bottom 10)</p>
           <div class="ball-row" id="cold-wb-row"></div>
         </div>
-        <div class="panel-col">
+        <div class="panel-col" id="hotcold-pb-col">
           <p class="panel-subtitle">🔥 Hottest Powerballs (Top 5)</p>
           <div class="ball-row" id="hot-pb-row"></div>
           <p class="panel-subtitle">❄️ Coldest Powerballs (Bottom 5)</p>
@@ -888,15 +888,6 @@ async function initPickData(gameId) {
   allDraws = draws;
   if (!allDraws.length) return;
 
-  // Rebuild grids for 0-9
-  buildGrid('wb-grid', 0, 9);
-  document.getElementById('pb-grid-box').style.display = 'none';
-
-  // Show correct analytics tabs
-  ['powerplay','gap','pairs'].forEach(tab => {
-    document.querySelector(`[data-tab="${tab}"]`).style.display = 'none';
-  });
-
   const statsBar = document.getElementById('stats-bar');
   statsBar.style.display = 'flex';
   document.getElementById('stat-draws').textContent = allDraws.length;
@@ -919,28 +910,63 @@ async function initPickData(gameId) {
   renderDraw(0);
 }
 
+// ── Update all UI labels for the active game ──────────────────────────────
+function updateUIForGame() {
+  const g = activeGame;
+  const isPB = g.hasPb;
+
+  // Main grid header
+  document.getElementById('wb-grid-header').textContent =
+    isPB ? 'White Balls (1 – 69)' : `Digits (${g.wbMin}–${g.wbMax})`;
+
+  // Stats bar format desc
+  document.getElementById('format-desc').textContent = g.formatDesc;
+
+  // PB grid box visibility
+  document.getElementById('pb-grid-box').style.display = isPB ? '' : 'none';
+
+  // Tabs: show/hide PB-only tabs
+  ['powerplay','gap','pairs'].forEach(tab => {
+    document.querySelector(`[data-tab="${tab}"]`).style.display = isPB ? '' : 'none';
+  });
+
+  // Frequency panel labels
+  document.getElementById('freq-wb-subtitle').textContent =
+    isPB ? 'White Balls (1–69)' : `Digits (${g.wbMin}–${g.wbMax})`;
+  document.getElementById('freq-pb-subtitle').style.display = isPB ? '' : 'none';
+  document.getElementById('freq-pb-divider').style.display  = isPB ? '' : 'none';
+  document.getElementById('freq-pb-container').style.display = isPB ? '' : 'none';
+  document.getElementById('legend-pb-label').style.display  = isPB ? '' : 'none';
+  document.getElementById('legend-wb-label').querySelector('span + span, span:last-child') &&
+    (document.getElementById('legend-wb-label').lastChild.textContent =
+      isPB ? 'White Ball (current draw)' : 'Digit (current draw)');
+
+  // Hot & Cold labels
+  document.getElementById('hotcold-wb-hot-label').textContent =
+    isPB ? '🔥 Hottest White Balls (Top 10)' : '🔥 Hottest Digits (Top 5)';
+  document.getElementById('hotcold-wb-cold-label').textContent =
+    isPB ? '❄️ Coldest White Balls (Bottom 10)' : '❄️ Coldest Digits (Bottom 5)';
+  document.getElementById('hotcold-pb-col').style.display = isPB ? '' : 'none';
+}
+
 // ── Game switcher ─────────────────────────────────────────────────────────
 function switchGame(gameId) {
   activeGame = GAMES[gameId];
   document.querySelectorAll('.game-btn').forEach(b =>
     b.classList.toggle('active', b.dataset.game === gameId)
   );
-  // Reset tabs back to freq
+
+  updateUIForGame();
+  switchTab('freq');
+  allDraws = [];
+  currentIndex = 0;
+
   if (activeGame.hasPb) {
-    ['powerplay','gap','pairs'].forEach(tab => {
-      document.querySelector(`[data-tab="${tab}"]`).style.display = '';
-    });
-    document.getElementById('pb-grid-box').style.display = '';
     buildGrid('wb-grid', 1, 69);
     buildGrid('pb-grid', 1, 26);
-    switchTab('freq');
-    allDraws = [];
-    currentIndex = 0;
     initData();
   } else {
-    switchTab('freq');
-    allDraws = [];
-    currentIndex = 0;
+    buildGrid('wb-grid', 0, 9);
     initPickData(gameId);
   }
 }
