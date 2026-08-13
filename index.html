@@ -1634,31 +1634,22 @@ document.querySelectorAll('.game-btn').forEach(btn => {
 initData();
 
 // ── ⑧ Smart Pick ──────────────────────────────────────────────────────────
-function generateSmartPick(draws) {
-  if (!draws.length) return null;
-
-  const today  = new Date().getDay();      // 0=Sun … 6=Sat
+// ── Smart Pick: Powerball ──────────────────────────────────────────────────
+function generatePowerballPick(draws) {
+  const today  = new Date().getDay();
   const recent = draws.slice(0, 30);
   const N      = draws.length;
 
-  // ① Overall historical frequency (indices 1-69 used)
-  const freq = new Array(70).fill(0);
-  draws.forEach(d => d.wb.forEach(n => freq[n]++));
-
-  // ② Hot score: frequency within last-30 draws
-  const hot = new Array(70).fill(0);
-  recent.forEach(d => d.wb.forEach(n => hot[n]++));
-
-  // ③ Gap: draw-index of most-recent appearance; higher index = more overdue
+  const freq    = new Array(70).fill(0);
+  const hot     = new Array(70).fill(0);
   const lastSeen = new Array(70).fill(N);
+  const dayFreq = new Array(70).fill(0);
+  draws.forEach(d => d.wb.forEach(n => freq[n]++));
+  recent.forEach(d => d.wb.forEach(n => hot[n]++));
   draws.forEach((d, i) => d.wb.forEach(n => { if (lastSeen[n] === N) lastSeen[n] = i; }));
-
-  // ④ Day-of-week frequency for today's weekday
   const dayDraws = draws.filter(d => new Date(d.date + 'T12:00:00').getDay() === today);
-  const dayFreq  = new Array(70).fill(0);
   dayDraws.forEach(d => d.wb.forEach(n => dayFreq[n]++));
 
-  // ⑤ Pair counts (for pair-affinity scoring during iterative selection)
   const pairC = {};
   draws.forEach(d => {
     const s = [...d.wb].sort((a,b)=>a-b);
@@ -1666,7 +1657,6 @@ function generateSmartPick(draws) {
       for (let j=i+1;j<s.length;j++) { const k=`${s[i]}-${s[j]}`; pairC[k]=(pairC[k]||0)+1; }
   });
 
-  // Min-max normalise an array (slot 0 ignored)
   const norm = arr => {
     const vals = arr.slice(1);
     const mx = Math.max(...vals, 1e-9), mn = Math.min(...vals);
@@ -1676,91 +1666,121 @@ function generateSmartPick(draws) {
 
   const nFreq = norm(freq);
   const nHot  = norm(hot);
-  const nGap  = lastSeen.map(g => g / N);           // higher gap → higher score
+  const nGap  = lastSeen.map(g => g / N);
   const nDay  = dayDraws.length > 3 ? norm(dayFreq) : new Array(70).fill(0.5);
-
-  // Model weights
   const W = { freq:.25, gap:.25, hot:.20, pair:.20, day:.10 };
 
   const selected = [], reasons = [];
-
   for (let pick = 0; pick < 5; pick++) {
     const excl = new Set(selected);
-
-    // Pair-affinity scores relative to already-selected numbers
     const pairScores = new Array(70).fill(0);
     if (selected.length) {
-      for (let n = activeGame.wbMin; n <= activeGame.wbMax; n++) {
+      for (let n = 1; n <= 69; n++) {
         if (excl.has(n)) continue;
-        selected.forEach(s => {
-          const k = `${Math.min(n,s)}-${Math.max(n,s)}`;
-          pairScores[n] += pairC[k] || 0;
-        });
+        selected.forEach(s => { const k=`${Math.min(n,s)}-${Math.max(n,s)}`; pairScores[n] += pairC[k]||0; });
         pairScores[n] /= selected.length;
       }
     }
     const maxPs = Math.max(...pairScores.slice(1), 1e-9);
-    const nPair  = pairScores.map(v => v / maxPs);
-
-    // Composite weight per ball
+    const nPair = pairScores.map(v => v / maxPs);
     const weights = new Array(70).fill(0);
-    for (let n = activeGame.wbMin; n <= activeGame.wbMax; n++) {
+    for (let n=1;n<=69;n++) {
       if (excl.has(n)) continue;
-      weights[n] = W.freq*nFreq[n] + W.gap*nGap[n] + W.hot*nHot[n]
-                 + W.pair*nPair[n] + W.day*nDay[n];
+      weights[n] = W.freq*nFreq[n] + W.gap*nGap[n] + W.hot*nHot[n] + W.pair*nPair[n] + W.day*nDay[n];
     }
-
-    // Weighted-random draw
     const total = weights.reduce((a,b)=>a+b, 0);
-    let rand = Math.random() * total, chosen = 1;
-    for (let n = activeGame.wbMin; n <= activeGame.wbMax; n++) { rand -= weights[n]; if (rand <= 0) { chosen = n; break; } }
-    chosen = Math.max(activeGame.wbMin, Math.min(activeGame.wbMax, chosen));
+    let rand = Math.random()*total, chosen=1;
+    for (let n=1;n<=69;n++) { rand -= weights[n]; if (rand<=0) { chosen=n; break; } }
+    chosen = Math.max(1, Math.min(69, chosen));
     selected.push(chosen);
-
-    // Determine the primary reason for this pick
-    const contrib = {
-      hot:  W.hot  * nHot[chosen],
-      gap:  W.gap  * nGap[chosen],
-      freq: W.freq * nFreq[chosen],
-      pair: W.pair * nPair[chosen],
-      day:  W.day  * nDay[chosen],
-    };
+    const contrib = { hot:W.hot*nHot[chosen], gap:W.gap*nGap[chosen], freq:W.freq*nFreq[chosen], pair:W.pair*nPair[chosen], day:W.day*nDay[chosen] };
     const primary = Object.entries(contrib).sort((a,b)=>b[1]-a[1])[0][0];
     const dayName = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][today];
     const detail = {
-      hot:  `appeared ${hot[chosen]}× in last 30 draws`,
-      gap:  lastSeen[chosen] === N ? `has never been drawn — highly overdue` : `last seen ${lastSeen[chosen]} draws ago`,
+      hot: `appeared ${hot[chosen]}× in last 30 draws`,
+      gap: lastSeen[chosen]===N ? `has never been drawn — highly overdue` : `last seen ${lastSeen[chosen]} draws ago`,
       freq: `drawn ${freq[chosen]}× across all ${N} draws`,
-      pair: selected.length > 1 ? `frequently pairs with ${selected.slice(0,-1).join(', ')}` : `strong historical pair affinity`,
-      day:  dayDraws.length > 3 ? `appears ${dayFreq[chosen]}× on ${dayName}s` : `historical average (few ${dayName} draws)`,
+      pair: selected.length>1 ? `frequently pairs with ${selected.slice(0,-1).join(', ')}` : `strong historical pair affinity`,
+      day: dayDraws.length>3 ? `appears ${dayFreq[chosen]}× on ${dayName}s` : `historical average (few ${dayName} draws)`,
     };
     reasons.push({ n: chosen, primary, detail: detail[primary] });
   }
-
   selected.sort((a,b)=>a-b);
 
-  // Powerball (1-26): 40% frequency + 60% gap
+  // Powerball selection
   const pbFreq    = new Array(27).fill(0);
   const pbLastSeen = new Array(27).fill(N);
-  draws.forEach((d, i) => {
-    if (d.pb >= activeGame.pbMin && d.pb <= activeGame.pbMax) {
-      pbFreq[d.pb]++;
-      if (pbLastSeen[d.pb] === N) pbLastSeen[d.pb] = i;
-    }
-  });
+  draws.forEach((d,i) => { if(d.pb>=1&&d.pb<=26){ pbFreq[d.pb]++; if(pbLastSeen[d.pb]===N) pbLastSeen[d.pb]=i; } });
   const nPbFreq = norm(pbFreq);
-  const nPbGap  = pbLastSeen.map(g => g / N);
+  const nPbGap  = pbLastSeen.map(g=>g/N);
   const pbW = new Array(27).fill(0);
-  for (let n=1;n<=26;n++) pbW[n] = .4*nPbFreq[n] + .6*nPbGap[n];
-  const pbTotal = pbW.reduce((a,b)=>a+b, 0);
-  let pbRand = Math.random() * pbTotal, pb = 1;
-  for (let n=1;n<=26;n++) { pbRand -= pbW[n]; if (pbRand <= 0) { pb = n; break; } }
-  pb = Math.max(1, Math.min(26, pb));
+  for (let n=1;n<=26;n++) pbW[n] = .4*nPbFreq[n]+.6*nPbGap[n];
+  const pbTotal = pbW.reduce((a,b)=>a+b,0);
+  let pbRand=Math.random()*pbTotal, pb=1;
+  for (let n=1;n<=26;n++) { pbRand-=pbW[n]; if(pbRand<=0){pb=n;break;} }
 
   const dayName = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][today];
   return { wb: selected, pb, reasons, N, dayName, dayDrawCount: dayDraws.length };
 }
 
+// ── Smart Pick: Pick 3 / Pick 4 ───────────────────────────────────────────
+function generatePickNPick(draws, count) {
+  const N      = draws.length;
+  const recent = draws.slice(0, Math.min(30, N));
+
+  // For Pick 3/4 digits 0-9, repetition IS allowed
+  const freq    = new Array(10).fill(0);
+  const hot     = new Array(10).fill(0);
+  const lastSeen = new Array(10).fill(N);
+
+  draws.forEach(d => d.wb.forEach(n => { if(n>=0&&n<=9) freq[n]++; }));
+  recent.forEach(d => d.wb.forEach(n => { if(n>=0&&n<=9) hot[n]++; }));
+  draws.forEach((d, i) => d.wb.forEach(n => {
+    if (n>=0&&n<=9 && lastSeen[n]===N) lastSeen[n]=i;
+  }));
+
+  const norm = arr => {
+    const mx=Math.max(...arr,1e-9), mn=Math.min(...arr);
+    if(mx===mn) return arr.map(()=>.5);
+    return arr.map(v=>(v-mn)/(mx-mn));
+  };
+
+  const nFreq = norm(freq);
+  const nHot  = norm(hot);
+  const nGap  = lastSeen.map(g=>g/N);
+
+  // Weights: frequency 35%, gap/overdue 35%, hot streak 30%
+  const W = { freq:.35, gap:.35, hot:.30 };
+
+  const digits = [], reasons = [];
+  for (let pick = 0; pick < count; pick++) {
+    const weights = new Array(10).fill(0);
+    for (let n=0;n<=9;n++) weights[n] = W.freq*nFreq[n] + W.gap*nGap[n] + W.hot*nHot[n];
+    const total = weights.reduce((a,b)=>a+b,0);
+    let rand=Math.random()*total, chosen=0;
+    for (let n=0;n<=9;n++) { rand-=weights[n]; if(rand<=0){chosen=n;break;} }
+    chosen = Math.max(0, Math.min(9, chosen));
+    digits.push(chosen);
+    const contrib = { hot:W.hot*nHot[chosen], gap:W.gap*nGap[chosen], freq:W.freq*nFreq[chosen] };
+    const primary = Object.entries(contrib).sort((a,b)=>b[1]-a[1])[0][0];
+    const detail = {
+      hot: `appeared ${hot[chosen]}× in last ${recent.length} draws`,
+      gap: lastSeen[chosen]===N ? `has never appeared — highly overdue` : `last seen ${lastSeen[chosen]} draws ago`,
+      freq: `drawn ${freq[chosen]}× across all ${N} draws`,
+    };
+    reasons.push({ n: chosen, primary, detail: detail[primary] });
+  }
+
+  return { wb: digits, reasons, N };
+}
+
+function generateSmartPick(draws) {
+  if (!draws.length) return null;
+  if (activeGame.hasPb) return generatePowerballPick(draws);
+  return generatePickNPick(draws, activeGame.wbCount);
+}
+
+// ── Render Smart Pick ──────────────────────────────────────────────────────
 function renderSmartPick() {
   const container = document.getElementById('pick-content');
   container.innerHTML = '';
@@ -1775,12 +1795,16 @@ function renderSmartPick() {
   }
 
   const pick = generateSmartPick(allDraws);
+  const isPB = activeGame.hasPb;
+  const gameName = isPB ? 'Powerball' : activeGame.name;
+  const today = new Date().getDay();
+  const dayName = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][today];
 
   // Header
   const hdr = document.createElement('div');
   hdr.className = 'pick-header';
-  hdr.innerHTML = `<h3>✨ AI Smart Pick</h3>
-    <p>Weighted statistical model · ${pick.N} historical draws · Today: ${pick.dayName}</p>`;
+  hdr.innerHTML = `<h3>✨ AI Smart Pick — ${gameName}</h3>
+    <p>Weighted statistical model · ${pick.N} historical draws${isPB ? ` · Today: ${pick.dayName}` : ''}</p>`;
   container.appendChild(hdr);
 
   // Ball display
@@ -1788,22 +1812,24 @@ function renderSmartPick() {
   ballsDiv.className = 'pick-balls';
   pick.wb.forEach(n => {
     const b = document.createElement('div');
-    b.className = 'pick-ball'; b.textContent = n;
+    b.className = 'pick-ball';
+    b.textContent = n;
     ballsDiv.appendChild(b);
   });
-  const sep = document.createElement('span');
-  sep.className = 'pick-sep'; sep.textContent = '+';
-  ballsDiv.appendChild(sep);
-  const pbDiv = document.createElement('div');
-  pbDiv.className = 'pick-ball pb';
-  pbDiv.innerHTML = `${pick.pb}<span class="pb-label">PB</span>`;
-  ballsDiv.appendChild(pbDiv);
+  if (isPB) {
+    const sep = document.createElement('span');
+    sep.className = 'pick-sep'; sep.textContent = '+';
+    ballsDiv.appendChild(sep);
+    const pbDiv = document.createElement('div');
+    pbDiv.className = 'pick-ball pb';
+    pbDiv.innerHTML = `${pick.pb}<span class="pb-label">PB</span>`;
+    ballsDiv.appendChild(pbDiv);
+  }
   container.appendChild(ballsDiv);
 
   // Action buttons
   const acts = document.createElement('div');
   acts.className = 'pick-actions';
-
   const genBtn = document.createElement('button');
   genBtn.className = 'pick-btn pick-btn-gen';
   genBtn.textContent = '🔄 Generate New Pick';
@@ -1812,7 +1838,9 @@ function renderSmartPick() {
   const copyBtn = document.createElement('button');
   copyBtn.className = 'pick-btn pick-btn-copy';
   copyBtn.textContent = '📋 Copy Pick';
-  const copyText = `${pick.wb.join(' ')} PB: ${pick.pb}`;
+  const copyText = isPB
+    ? `${pick.wb.join(' ')} PB: ${pick.pb}`
+    : pick.wb.join('-');
   copyBtn.onclick = () => {
     const doFallback = () => {
       const ta = document.createElement('textarea');
@@ -1833,7 +1861,7 @@ function renderSmartPick() {
   // Why these numbers
   const reasonTitle = document.createElement('p');
   reasonTitle.className = 'pick-section-title';
-  reasonTitle.textContent = '📊 Why These Numbers?';
+  reasonTitle.textContent = isPB ? '📊 Why These Numbers?' : '📊 Why These Digits?';
   container.appendChild(reasonTitle);
 
   const card = document.createElement('div');
@@ -1857,16 +1885,18 @@ function renderSmartPick() {
     card.appendChild(row);
   });
 
-  // Powerball row
-  const pbRow = document.createElement('div'); pbRow.className = 'pick-row';
-  const pbMb  = document.createElement('div'); pbMb.className = 'mini-ball pb'; pbMb.textContent = pick.pb;
-  const pbRt  = document.createElement('div'); pbRt.className = 'pick-reason';
-  pbRt.innerHTML = `<span class="rtag rtag-pb">⭐ Powerball</span><strong>${pick.pb}</strong> — frequency + overdue gap model (range 1–26)`;
-  pbRow.appendChild(pbMb); pbRow.appendChild(pbRt);
-  card.appendChild(pbRow);
+  // Powerball-only: PB reason row
+  if (isPB) {
+    const pbRow = document.createElement('div'); pbRow.className = 'pick-row';
+    const pbMb  = document.createElement('div'); pbMb.className = 'mini-ball pb'; pbMb.textContent = pick.pb;
+    const pbRt  = document.createElement('div'); pbRt.className = 'pick-reason';
+    pbRt.innerHTML = `<span class="rtag rtag-pb">⭐ Powerball</span><strong>${pick.pb}</strong> — frequency + overdue gap model (range 1–26)`;
+    pbRow.appendChild(pbMb); pbRow.appendChild(pbRt);
+    card.appendChild(pbRow);
+  }
   container.appendChild(card);
 
-  // Model Weights breakdown
+  // Model weights
   const wTitle = document.createElement('p');
   wTitle.className = 'pick-section-title';
   wTitle.style.marginTop = '20px';
@@ -1877,13 +1907,21 @@ function renderSmartPick() {
   wCard.className = 'pick-card';
   const pwDiv = document.createElement('div');
   pwDiv.className = 'pick-weights';
-  [
+
+  const pbWeights = [
     ['📈 Historical Frequency', 25, '#3b82f6'],
     ['⏳ Gap / Overdue',        25, '#f59e0b'],
     ['🔥 Hot Streak (last 30)', 20, '#ef4444'],
     ['🔗 Pair Affinity',        20, '#8b5cf6'],
     ['📅 Day-of-Week Pattern',  10, '#10b981'],
-  ].forEach(([label, pct, color]) => {
+  ];
+  const pickWeights = [
+    ['📈 Historical Frequency', 35, '#3b82f6'],
+    ['⏳ Gap / Overdue',        35, '#f59e0b'],
+    ['🔥 Hot Streak (last 30)', 30, '#ef4444'],
+  ];
+
+  (isPB ? pbWeights : pickWeights).forEach(([label, pct, color]) => {
     const row = document.createElement('div'); row.className = 'pw-row';
     row.innerHTML = `
       <span class="pw-label">${label}</span>
@@ -1897,7 +1935,7 @@ function renderSmartPick() {
   // Disclaimer
   const disc = document.createElement('p');
   disc.className = 'pick-disclaimer';
-  disc.textContent = '⚠️ This is a statistical model based on historical patterns. Powerball is a random draw — past results do not predict future outcomes. Play responsibly.';
+  disc.textContent = `⚠️ This is a statistical model based on historical patterns. ${gameName} is a random draw — past results do not predict future outcomes. Play responsibly.`;
   container.appendChild(disc);
 }
 </script>
