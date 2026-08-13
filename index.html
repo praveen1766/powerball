@@ -491,7 +491,7 @@
       <div class="grid white-balls" id="wb-grid"></div>
     </div>
   </div>
-  <div class="grid-box">
+  <div class="grid-box" id="pb-grid-box">
     <div class="grid-header">Powerball (1 – 26)</div>
     <div class="grid-wrapper">
       <div class="grid power-balls" id="pb-grid"></div>
@@ -691,10 +691,20 @@ const showTip = (e, html) => {
 const hideTip = () => (tooltip.style.display = 'none');
 
 // ── Build cell grids ──────────────────────────────────────────────────────
-function buildGrid(id, max) {
+function buildGrid(id, minNum, maxNum) {
   const container = document.getElementById(id);
+  container.innerHTML = '';
   const isWb = id === 'wb-grid';
-  for (let i = 1; i <= max; i++) {
+  // Set grid columns based on range
+  const count = maxNum - minNum + 1;
+  if (isWb) {
+    container.style.gridTemplateColumns = activeGame.hasPb
+      ? 'repeat(7, 45px)'
+      : `repeat(${Math.min(count, 10)}, 45px)`;
+  } else {
+    container.style.gridTemplateColumns = 'repeat(5, 45px)';
+  }
+  for (let i = minNum; i <= maxNum; i++) {
     const cell = document.createElement('div');
     cell.className = 'cell';
     cell.id = `${id}-${i}`;
@@ -831,7 +841,9 @@ async function initData() {
   allDraws.forEach((draw, idx) => {
     const opt = document.createElement('option');
     opt.value = idx;
-    opt.textContent = `${draw.date}  (${draw.wb.join(', ')} | PB: ${draw.pb})`;
+    opt.textContent = activeGame.hasPb
+      ? `${draw.date}  (${draw.wb.join(', ')} | PB: ${draw.pb})`
+      : `${draw.date}  (${draw.wb.join(', ')})`;
     select.appendChild(opt);
   });
 
@@ -842,6 +854,95 @@ async function initData() {
   document.getElementById('analytics-wrapper').style.display = 'block';
 
   renderDraw(0);
+}
+
+// ── NJ Pick 3/4 data loader ───────────────────────────────────────────────
+async function initPickData(gameId) {
+  loadingMsg.textContent = `Fetching NJ ${gameId === 'pick3' ? 'Pick 3' : 'Pick 4'} data…`;
+  loadingMsg.style.display = 'block';
+  loadingMsg.className = 'loading';
+  document.getElementById('analytics-wrapper').style.display = 'none';
+  document.getElementById('stats-bar').style.display = 'none';
+
+  let draws = [];
+  try {
+    const res = await fetch('./nj_data.json');
+    if (!res.ok) throw new Error('nj_data.json not found');
+    const json = await res.json();
+    const raw = json[gameId] || [];
+    draws = raw.map(d => ({
+      date: d.date.split('T')[0],
+      wb: d.numbers.map(Number),
+      pb: NaN,
+      multiplier: NaN
+    })).filter(d => d.wb.length >= activeGame.wbCount
+                    && d.wb.every(n => !isNaN(n) && n >= 0 && n <= 9));
+    draws.sort((a, b) => b.date.localeCompare(a.date));
+    loadingMsg.style.display = 'none';
+  } catch(e) {
+    console.warn('Could not load nj_data.json:', e.message);
+    loadingMsg.innerHTML = '⚠️ No local data yet — run the scraper or wait for GitHub Actions.';
+    loadingMsg.className = 'loading warning';
+  }
+
+  allDraws = draws;
+  if (!allDraws.length) return;
+
+  // Rebuild grids for 0-9
+  buildGrid('wb-grid', 0, 9);
+  document.getElementById('pb-grid-box').style.display = 'none';
+
+  // Show correct analytics tabs
+  ['powerplay','gap','pairs'].forEach(tab => {
+    document.querySelector(`[data-tab="${tab}"]`).style.display = 'none';
+  });
+
+  const statsBar = document.getElementById('stats-bar');
+  statsBar.style.display = 'flex';
+  document.getElementById('stat-draws').textContent = allDraws.length;
+  document.getElementById('stat-range').textContent =
+    `${allDraws[allDraws.length - 1].date} – ${allDraws[0].date}`;
+
+  select.innerHTML = '';
+  allDraws.forEach((draw, idx) => {
+    const opt = document.createElement('option');
+    opt.value = idx;
+    opt.textContent = `${draw.date}  (${draw.wb.join(', ')})`;
+    select.appendChild(opt);
+  });
+
+  select.disabled = false;
+  olderBtn.disabled = false;
+  mapAllBtn.disabled = false;
+  dateRangeDisplay.style.display = 'block';
+  document.getElementById('analytics-wrapper').style.display = 'block';
+  renderDraw(0);
+}
+
+// ── Game switcher ─────────────────────────────────────────────────────────
+function switchGame(gameId) {
+  activeGame = GAMES[gameId];
+  document.querySelectorAll('.game-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.game === gameId)
+  );
+  // Reset tabs back to freq
+  if (activeGame.hasPb) {
+    ['powerplay','gap','pairs'].forEach(tab => {
+      document.querySelector(`[data-tab="${tab}"]`).style.display = '';
+    });
+    document.getElementById('pb-grid-box').style.display = '';
+    buildGrid('wb-grid', 1, 69);
+    buildGrid('pb-grid', 1, 26);
+    switchTab('freq');
+    allDraws = [];
+    currentIndex = 0;
+    initData();
+  } else {
+    switchTab('freq');
+    allDraws = [];
+    currentIndex = 0;
+    initPickData(gameId);
+  }
 }
 
 // ── Clear grids ───────────────────────────────────────────────────────────
@@ -879,17 +980,19 @@ function drawPolyline(svg, numbers, containerRect, strokeRgb, strokeWidth, opaci
 function renderDraw(index) {
   clearCells();
   const draw = allDraws[index];
-  const ppStr = !isNaN(draw.multiplier) ? `  ·  PP ${draw.multiplier}×` : '';
+  const ppStr = activeGame.hasPb && !isNaN(draw.multiplier) ? `  ·  PP ${draw.multiplier}×` : '';
+  const pbStr = activeGame.hasPb ? `  ·  PB: ${draw.pb}` : '';
   dateRangeDisplay.textContent =
-    `Single Draw: ${draw.date}  ·  WB: ${draw.wb.join(' · ')}  ·  PB: ${draw.pb}${ppStr}`;
+    `Single Draw: ${draw.date}  ·  WB: ${draw.wb.join(' · ')}${pbStr}${ppStr}`;
 
   const svg  = document.getElementById('svg-lines');
   const rect = document.getElementById('wb-grid').getBoundingClientRect();
   const sorted = [...draw.wb].sort((a, b) => a - b);
-  drawPolyline(svg, sorted, rect, '51,51,51', 3, 1, true);
+  if (activeGame.hasPb) drawPolyline(svg, sorted, rect, '51,51,51', 3, 1, true);
   sorted.forEach(n => document.getElementById(`wb-grid-${n}`)?.classList.add('active'));
-  document.getElementById(`pb-grid-${draw.pb}`)?.classList.add('active');
+  if (activeGame.hasPb) document.getElementById(`pb-grid-${draw.pb}`)?.classList.add('active');
 
+  currentIndex       = index;
   select.value       = index;
   newerBtn.disabled  = index === 0;
   olderBtn.disabled  = index === allDraws.length - 1;
@@ -1494,6 +1597,11 @@ document.getElementById('trend-pb-btn').addEventListener('click', () => {
 window.addEventListener('resize', () => {
   if (!allDraws.length) return;
   if (isMappingAll) renderAllDraws(); else renderDraw(currentIndex);
+});
+
+// ── Game selector buttons ─────────────────────────────────────────────────
+document.querySelectorAll('.game-btn').forEach(btn => {
+  btn.addEventListener('click', () => switchGame(btn.dataset.game));
 });
 
 // ── Start ─────────────────────────────────────────────────────────────────
