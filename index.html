@@ -952,6 +952,32 @@ function updateUIForGame() {
 
 // ── Game switcher ─────────────────────────────────────────────────────────
 function switchGame(gameId) {
+  // ── 730 Rule special case ────────────────────────────────────────────
+  const mainEls = ['stats-bar','loadingMsg','dateRangeDisplay','analytics-wrapper'];
+  const controlsEl = document.querySelector('.controls');
+  const gridsEl   = document.querySelector('.grids-wrapper');
+  const subtitleEl = document.getElementById('main-subtitle');
+  const panel730  = document.getElementById('panel-730');
+
+  if (gameId === 'rule730') {
+    mainEls.forEach(id => { const el=document.getElementById(id); if(el) el.style.display='none'; });
+    if (controlsEl) controlsEl.style.display = 'none';
+    if (gridsEl)    gridsEl.style.display    = 'none';
+    if (subtitleEl) subtitleEl.style.display = 'none';
+    if (panel730)   panel730.style.display   = 'block';
+    document.querySelectorAll('.game-btn').forEach(b =>
+      b.classList.toggle('active', b.dataset.game === 'rule730')
+    );
+    if (!r730AllPick3 || !r730AllPick3.length) init730();
+    return;
+  }
+
+  // ── Normal game (hide 730 panel, restore dashboard) ─────────────────
+  if (panel730)   panel730.style.display   = 'none';
+  if (subtitleEl) subtitleEl.style.display = '';
+  if (controlsEl) controlsEl.style.display = '';
+  if (gridsEl)    gridsEl.style.display    = '';
+
   activeGame = GAMES[gameId];
   document.querySelectorAll('.game-btn').forEach(b =>
     b.classList.toggle('active', b.dataset.game === gameId)
@@ -1962,10 +1988,8 @@ function renderSmartPick() {
       <div class="r730-section-label">📅 Select Base Draw</div>
       <div class="r730-controls-row">
         <div class="r730-field">
-          <label class="r730-label">Date</label>
-          <select id="r730-date-sel" class="r730-select">
-            <option>Loading…</option>
-          </select>
+          <label class="r730-label">Date (NJ Time)</label>
+          <input type="date" id="r730-date-sel" class="r730-date-input">
         </div>
         <div class="r730-field">
           <label class="r730-label">Draw</label>
@@ -1997,7 +2021,7 @@ function renderSmartPick() {
       <div class="r730-card">
         <div class="r730-section-label">🏆 Top Predicted Numbers</div>
         <div id="r730-top-picks" class="r730-top-picks"></div>
-        <p class="r730-note">Numbers ranked by how many rundown methods & mirrors agree. Play all or choose top picks.</p>
+        <p class="r730-note">Numbers ranked by how many rundown methods &amp; mirrors agree. Play all or choose top picks.</p>
       </div>
 
       <!-- Actual result reveal (if historical) -->
@@ -2138,6 +2162,24 @@ function renderSmartPick() {
 .r730-perf-pct { font-size:.8rem; font-weight:700; color:#64748b; min-width:40px; text-align:right; }
 
 .r730-disclaimer { font-size:.72rem; color:#94a3b8; text-align:center; margin-top:4px; }
+
+/* Date picker input */
+.r730-date-input {
+  padding: 9px 12px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: .9rem;
+  font-family: inherit;
+  background: white;
+  color: #1e293b;
+  cursor: pointer;
+  min-width: 170px;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.r730-date-input:focus { outline: none; border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124,58,237,.1); }
+.r730-date-input::-webkit-calendar-picker-indicator { cursor: pointer; opacity: .6; }
+.r730-date-input::-webkit-calendar-picker-indicator:hover { opacity: 1; }
 </style>
 
 <script>
@@ -2230,39 +2272,62 @@ function getConsensusPicks(baseDigits, methodRates, topN = 8) {
     }));
 }
 
+// ── NJ Eastern Time helpers ───────────────────────────────────────────────
+function nowInET() {
+  // Returns a Date object shifted to US/Eastern current wall-clock
+  return new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
+}
+
+function todayStrET() {
+  const et = nowInET();
+  const y  = et.getFullYear();
+  const m  = String(et.getMonth() + 1).padStart(2, '0');
+  const d  = String(et.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
 // ── Init 730 panel ────────────────────────────────────────────────────────
 async function init730() {
-  // Load nj_data.json for pick3 draws with midday/evening
   let pick3 = [];
   try {
-    const res = await fetch('./nj_data.json');
+    const res = await fetch('./nj_data.json?t=' + Date.now()); // bust cache
     if (res.ok) {
       const json = await res.json();
       pick3 = (json.pick3 || []).filter(d => d.numbers && d.numbers.length >= 3);
     }
   } catch(e) { console.warn('nj_data.json not available for 730 panel'); }
 
-  r730AllPick3 = pick3; // newest first (scraper already sorts descending)
+  r730AllPick3 = pick3; // newest first
 
-  // Backtest
+  // Backtest all methods against historical data
   r730BacktestRates = backtestAllMethods(r730AllPick3);
 
-  // Populate date selector with unique dates
+  // Set up the date input: min = oldest date in data, max = today (NJ ET)
   const dateSel = document.getElementById('r730-date-sel');
-  const uniqueDates = [...new Set(r730AllPick3.map(d => d.date.split('T')[0]))];
-  dateSel.innerHTML = uniqueDates.map(d => `<option value="${d}">${formatDisplayDate(d)}</option>`).join('');
+  const today   = todayStrET();
+
+  const uniqueDates = [...new Set(r730AllPick3.map(d => d.date.split('T')[0]))].sort();
+  if (uniqueDates.length) {
+    dateSel.min   = uniqueDates[0];
+    dateSel.max   = today;
+    // Default to the most recent date that has data
+    dateSel.value = uniqueDates[uniqueDates.length - 1];
+  } else {
+    dateSel.max   = today;
+    dateSel.value = today;
+  }
+
   dateSel.addEventListener('change', r730UpdateNumber);
 
-  // Default to midday toggle
   r730SetDraw('Midday');
   r730UpdateNumber();
 }
 
 function formatDisplayDate(iso) {
-  // iso = "2026-08-11"
+  // iso = "2026-08-11" — format as "Aug 11, 2026" (NJ dates stored as local ET dates)
   const [y, m, d] = iso.split('-');
   const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  return `${months[+m-1]} ${+d}, ${y}`;
+  return `${months[+m - 1]} ${+d}, ${y} · NJ ET`;
 }
 
 function r730SetDraw(type) {
@@ -2273,10 +2338,9 @@ function r730SetDraw(type) {
 }
 
 function r730UpdateNumber() {
-  const dateVal = document.getElementById('r730-date-sel').value;
-  if (!dateVal) return;
+  const dateVal = document.getElementById('r730-date-sel').value; // "YYYY-MM-DD"
+  if (!dateVal || dateVal === 'Loading\u2026') return;
 
-  // Find matching draw
   const match = r730AllPick3.find(d => d.date.startsWith(dateVal) && d.time === r730DrawType);
   const noteEl = document.getElementById('r730-auto-note');
 
@@ -2285,15 +2349,14 @@ function r730UpdateNumber() {
     document.getElementById('r730-d0').value = nums[0];
     document.getElementById('r730-d1').value = nums[1];
     document.getElementById('r730-d2').value = nums[2];
-    noteEl.textContent = `✅ Auto-loaded from NJ Pick 3 data`;
+    noteEl.textContent = `✅ Auto-loaded — ${r730DrawType} draw on ${dateVal} (NJ ET)`;
   } else {
     document.getElementById('r730-d0').value = '';
     document.getElementById('r730-d1').value = '';
     document.getElementById('r730-d2').value = '';
-    noteEl.textContent = `⚠️ No ${r730DrawType} data for this date — enter number manually`;
+    noteEl.textContent = `⚠️ No ${r730DrawType} data for ${dateVal} in NJ ET — enter number manually`;
   }
 
-  // Clear previous output
   document.getElementById('r730-output').style.display = 'none';
 }
 
@@ -2332,12 +2395,15 @@ function r730Predict() {
   const { nextDate, nextType } = getNextDrawInfo(dateStr, r730DrawType);
 
   // Predicting bar
+  const [ny, nm, nd2] = nextDate.split('-');
   const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const [ny,nm,nd] = nextDate.split('-');
-  const prettyNext = `${months[+nm-1]} ${+nd}, ${ny}`;
+  const prettyBase = dateStr; // YYYY-MM-DD
+  const [by, bm, bd] = prettyBase.split('-');
   document.getElementById('r730-predicting-bar').innerHTML =
-    `🎯 Predicting: <strong>${prettyNext} · ${nextType}</strong> &nbsp;|&nbsp; Based on: ${formatDisplayDate(dateStr)} ${r730DrawType} → <strong>${baseDigits.join('-')}</strong>`;
-
+    `🎯 Predicting: <strong>${months[+nm-1]} ${+nd2}, ${ny} &mdash; ${nextType}</strong>
+     &nbsp;·&nbsp; NJ Eastern Time
+     &nbsp;│&nbsp; Base: ${months[+bm-1]} ${+bd}, ${by} ${r730DrawType}
+     &rarr; <strong>${baseDigits.join('-')}</strong>`;
   // Top consensus picks
   const picks = getConsensusPicks(baseDigits, r730BacktestRates, 8);
   renderTopPicks(picks);
@@ -2478,39 +2544,7 @@ function renderPerfBars() {
   `).join('');
 }
 
-// ── Integrate into game switcher ──────────────────────────────────────────
-const _origSwitchGame = switchGame;
-function switchGame(gameId) {
-  const mainEls = ['stats-bar','loadingMsg','dateRangeDisplay','analytics-wrapper'];
-  const controlsEl = document.querySelector('.controls');
-  const gridsEl   = document.querySelector('.grids-wrapper');
-  const subtitleEl = document.getElementById('main-subtitle');
-
-  if (gameId === 'rule730') {
-    // Hide all main dashboard elements
-    mainEls.forEach(id => { const el=document.getElementById(id); if(el) el.style.display='none'; });
-    if (controlsEl) controlsEl.style.display = 'none';
-    if (gridsEl)    gridsEl.style.display    = 'none';
-    if (subtitleEl) subtitleEl.style.display = 'none';
-    // Update active button
-    document.querySelectorAll('.game-btn').forEach(b =>
-      b.classList.toggle('active', b.dataset.game === 'rule730')
-    );
-    // Show 730 panel
-    document.getElementById('panel-730').style.display = 'block';
-    // Init if first time
-    if (!r730AllPick3.length) init730();
-  } else {
-    // Hide 730 panel
-    document.getElementById('panel-730').style.display = 'none';
-    // Restore subtitle
-    if (subtitleEl) subtitleEl.style.display = '';
-    if (controlsEl) controlsEl.style.display = '';
-    if (gridsEl)    gridsEl.style.display    = '';
-    // Delegate to original
-    _origSwitchGame(gameId);
-  }
-}
+// switchGame handles rule730 in the original definition above — nothing extra needed here.
 </script>
 </body>
 </html>
