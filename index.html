@@ -2302,16 +2302,19 @@ async function init730() {
   // Backtest all methods against historical data
   r730BacktestRates = backtestAllMethods(r730AllPick3);
 
-  // Set up the date input: min = oldest date in data, max = today (NJ ET)
+  // Set up the date input: min = oldest date, max = today (NJ ET)
   const dateSel = document.getElementById('r730-date-sel');
   const today   = todayStrET();
 
   const uniqueDates = [...new Set(r730AllPick3.map(d => d.date.split('T')[0]))].sort();
   if (uniqueDates.length) {
-    dateSel.min   = uniqueDates[0];
-    dateSel.max   = today;
-    // Default to the most recent date that has data
-    dateSel.value = uniqueDates[uniqueDates.length - 1];
+    dateSel.min = uniqueDates[0];
+    dateSel.max = today;
+    // Default to most recent date that HAS Midday data — avoids "no data" on first load
+    const latestMidday = r730AllPick3.find(d => d.time === 'Midday');
+    dateSel.value = latestMidday
+      ? latestMidday.date.split('T')[0]
+      : uniqueDates[uniqueDates.length - 1];
   } else {
     dateSel.max   = today;
     dateSel.value = today;
