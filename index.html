@@ -2018,10 +2018,10 @@ function renderSmartPick() {
       <div class="r730-predicting-bar" id="r730-predicting-bar"></div>
 
       <!-- Top Picks -->
-      <div class="r730-card">
-        <div class="r730-section-label">🏆 Top Predicted Numbers</div>
+      <div class="r730-card r730-picks-card">
+        <div class="r730-section-label">🎯 Predicted Numbers — Play These</div>
+        <div class="r730-picks-explainer">Numbers are ranked by how many rundown methods &amp; their mirror reflections agree. <strong>#1 is your strongest pick.</strong></div>
         <div id="r730-top-picks" class="r730-top-picks"></div>
-        <p class="r730-note">Numbers ranked by how many rundown methods &amp; mirrors agree. Play all or choose top picks.</p>
       </div>
 
       <!-- Actual result reveal (if historical) -->
@@ -2105,20 +2105,34 @@ function renderSmartPick() {
 .r730-predicting-bar { background:linear-gradient(135deg,#667eea,#764ba2); color:white; border-radius:12px; padding:14px 20px; font-size:.95rem; font-weight:600; text-align:center; letter-spacing:.01em; }
 
 /* Top picks */
-.r730-top-picks { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:10px; }
-.r730-pick-item { display:flex; align-items:center; gap:10px; background:#f8fafc; border:1.5px solid #e2e8f0; border-radius:12px; padding:10px 16px; flex:1; min-width:160px; transition:border-color .2s; }
-.r730-pick-item.rank-1 { border-color:#7c3aed; background:linear-gradient(135deg,rgba(124,58,237,.06),rgba(79,70,229,.04)); }
-.r730-pick-item.rank-2 { border-color:#3b82f6; background:rgba(59,130,246,.04); }
-.r730-pick-item.rank-3 { border-color:#10b981; background:rgba(16,185,129,.04); }
-.r730-rank-badge { font-size:.65rem; font-weight:700; color:#94a3b8; min-width:22px; }
-.r730-pick-digits { display:flex; gap:5px; }
-.r730-pick-digit { width:36px; height:36px; display:flex; align-items:center; justify-content:center; border-radius:50%; font-size:1.1rem; font-weight:700; background:#e5e7eb; color:#1e293b; }
-.r730-pick-item.rank-1 .r730-pick-digit { background:#7c3aed; color:white; }
-.r730-pick-item.rank-2 .r730-pick-digit { background:#3b82f6; color:white; }
-.r730-pick-item.rank-3 .r730-pick-digit { background:#10b981; color:white; }
-.r730-pick-score { margin-left:auto; text-align:right; }
-.r730-score-val { font-size:1.1rem; font-weight:700; color:#1e293b; }
-.r730-score-lbl { font-size:.65rem; color:#94a3b8; display:block; }
+.r730-picks-explainer { font-size:.78rem; color:#64748b; margin-bottom:14px; line-height:1.5; }
+
+/* Pick #1 hero card */
+.r730-pick-hero { display:flex; align-items:center; gap:20px; background:linear-gradient(135deg,#7c3aed,#4f46e5); border-radius:16px; padding:20px 24px; margin-bottom:14px; box-shadow:0 4px 24px rgba(124,58,237,.3); }
+.r730-pick-hero-label { color:rgba(255,255,255,.7); font-size:.7rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase; margin-bottom:4px; }
+.r730-pick-hero-num { display:flex; gap:10px; }
+.r730-pick-hero-digit { width:56px; height:56px; display:flex; align-items:center; justify-content:center; border-radius:50%; font-size:1.7rem; font-weight:800; background:white; color:#7c3aed; box-shadow:0 2px 8px rgba(0,0,0,.15); }
+.r730-pick-hero-meta { margin-left:auto; text-align:right; }
+.r730-pick-hero-conf { color:white; font-size:1.5rem; font-weight:800; }
+.r730-pick-hero-sublabel { color:rgba(255,255,255,.65); font-size:.7rem; }
+.r730-pick-hero-badge { background:rgba(255,255,255,.2); border-radius:20px; padding:3px 10px; font-size:.7rem; color:white; font-weight:700; display:inline-block; margin-top:6px; }
+
+/* Runner-up ranked list */
+.r730-picks-list { display:flex; flex-direction:column; gap:8px; }
+.r730-pick-row { display:flex; align-items:center; gap:14px; background:#f8fafc; border:1.5px solid #e2e8f0; border-radius:10px; padding:10px 14px; transition:border-color .2s; }
+.r730-pick-row:hover { border-color:#c4b5fd; }
+.r730-pick-row-rank { width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:.75rem; font-weight:800; flex-shrink:0; }
+.rank-2-bg { background:#dbeafe; color:#1d4ed8; }
+.rank-3-bg { background:#d1fae5; color:#065f46; }
+.rank-4-bg { background:#fef3c7; color:#92400e; }
+.rank-5-bg { background:#f1f5f9; color:#475569; }
+.r730-pick-row-digits { display:flex; gap:6px; }
+.r730-pick-row-digit { width:34px; height:34px; display:flex; align-items:center; justify-content:center; border-radius:50%; font-size:1rem; font-weight:700; background:#e5e7eb; color:#1e293b; }
+.r730-pick-row.rank-2 .r730-pick-row-digit { background:#3b82f6; color:white; }
+.r730-pick-row.rank-3 .r730-pick-row-digit { background:#10b981; color:white; }
+.r730-pick-row.rank-4 .r730-pick-row-digit { background:#f59e0b; color:white; }
+.r730-pick-row-conf { margin-left:auto; font-size:.85rem; font-weight:700; color:#64748b; }
+.r730-pick-row-conf span { font-size:.65rem; font-weight:400; color:#94a3b8; display:block; text-align:right; }
 .r730-note { font-size:.75rem; color:#94a3b8; margin-top:8px; }
 
 /* Actual result card */
@@ -2409,7 +2423,7 @@ function r730Predict() {
      &rarr; <strong>${baseDigits.join('-')}</strong>`;
   // Top consensus picks
   const picks = getConsensusPicks(baseDigits, r730BacktestRates, 8);
-  renderTopPicks(picks);
+  renderTopPicks(picks, baseDigits);
 
   // Check if we actually have the result (historical verification)
   const actualMatch = r730AllPick3.find(d => d.date.startsWith(nextDate) && d.time === nextType);
@@ -2425,22 +2439,55 @@ function r730Predict() {
   document.getElementById('r730-output').scrollIntoView({ behavior:'smooth', block:'start' });
 }
 
-function renderTopPicks(picks) {
+function renderTopPicks(picks, baseDigits) {
   const container = document.getElementById('r730-top-picks');
-  const rankLabels = ['🥇','🥈','🥉','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣'];
-  const rankClasses = ['rank-1','rank-2','rank-3','rank-4','rank-5'];
-  container.innerHTML = picks.map((p, i) => `
-    <div class="r730-pick-item ${rankClasses[i] || ''}">
-      <div class="r730-rank-badge">${rankLabels[i]}</div>
-      <div class="r730-pick-digits">
-        ${p.digits.map(d => `<div class="r730-pick-digit">${d}</div>`).join('')}
+  const baseStr = baseDigits.join('');
+
+  // Filter out the base number itself — it's always row 1 of every rundown,
+  // showing it as a "prediction" is misleading
+  const filtered = picks.filter(p => p.digits.join('') !== baseStr);
+  const display  = filtered.length >= 5 ? filtered : picks; // fallback if all filtered
+
+  if (!display.length) {
+    container.innerHTML = '<p style="color:#94a3b8;font-size:.85rem">Not enough data to rank picks.</p>';
+    return;
+  }
+
+  const top   = display[0];
+  const rest  = display.slice(1, 5); // show #2–#5 as runner-ups
+  const rankBgClass = ['rank-2-bg','rank-3-bg','rank-4-bg','rank-5-bg'];
+  const rankLabel   = ['#2','#3','#4','#5'];
+  const rankClass   = ['rank-2','rank-3','rank-4','rank-5'];
+
+  container.innerHTML = `
+    <!-- Hero: #1 Pick -->
+    <div class="r730-pick-hero">
+      <div>
+        <div class="r730-pick-hero-label">⭐ #1 Best Pick</div>
+        <div class="r730-pick-hero-num">
+          ${top.digits.map(d => `<div class="r730-pick-hero-digit">${d}</div>`).join('')}
+        </div>
+        <div class="r730-pick-hero-badge">Play straight &amp; box</div>
       </div>
-      <div class="r730-pick-score">
-        <div class="r730-score-val">${p.pct}%</div>
-        <span class="r730-score-lbl">confidence</span>
+      <div class="r730-pick-hero-meta">
+        <div class="r730-pick-hero-conf">${top.pct}%</div>
+        <div class="r730-pick-hero-sublabel">agreement score</div>
       </div>
     </div>
-  `).join('');
+
+    <!-- Runner-ups: #2–#5 -->
+    <div class="r730-picks-list">
+      ${rest.map((p, i) => `
+        <div class="r730-pick-row ${rankClass[i]}">
+          <div class="r730-pick-row-rank ${rankBgClass[i]}">${rankLabel[i]}</div>
+          <div class="r730-pick-row-digits">
+            ${p.digits.map(d => `<div class="r730-pick-row-digit">${d}</div>`).join('')}
+          </div>
+          <div class="r730-pick-row-conf">${p.pct}%<span>agreement</span></div>
+        </div>
+      `).join('')}
+    </div>
+  `;
 }
 
 function renderActualResult(actualDraw, picks) {
