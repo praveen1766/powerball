@@ -42,6 +42,10 @@ jobs:
       run: python scraper.py
 
     - name: Commit and push if data changed
+      # Runs even if the scraper step failed above (e.g. Cloudflare blocked one
+      # request) so any real data it did manage to fetch isn't lost — the job
+      # still shows red/failed overall so the failure stays visible.
+      if: always()
       run: |
         git add nj_data.json
         if git diff --staged --quiet; then

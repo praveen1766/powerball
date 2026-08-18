@@ -1976,8 +1976,8 @@ function renderSmartPick() {
       <div class="r730-header-left">
         <div class="r730-icon">🔮</div>
         <div>
-          <h2 class="r730-title">730 Rundown Predictor</h2>
-          <p class="r730-sub">Multi-method consensus · NJ Pick 3 · Midday &amp; Evening</p>
+          <h2 class="r730-title">730 Predictor</h2>
+          <p class="r730-sub">Digit-frequency &amp; due-number model · NJ Pick 3 · Midday &amp; Evening</p>
         </div>
       </div>
       <div class="r730-badge">BETA</div>
@@ -2020,7 +2020,8 @@ function renderSmartPick() {
       <!-- Top Picks -->
       <div class="r730-card r730-picks-card">
         <div class="r730-section-label">🎯 Predicted Numbers — Play These</div>
-        <div class="r730-picks-explainer">Numbers are ranked by how many rundown methods &amp; their mirror reflections agree. <strong>#1 is your strongest pick.</strong></div>
+        <div class="r730-picks-explainer">Ranked by a digit-frequency &amp; due-number model, backtested against real historical draws. <strong>#1 is your strongest pick.</strong></div>
+        <div id="r730-backtest-summary" class="r730-backtest-summary"></div>
         <div id="r730-top-picks" class="r730-top-picks"></div>
       </div>
 
@@ -2030,35 +2031,24 @@ function renderSmartPick() {
         <div id="r730-actual-content"></div>
       </div>
 
-      <!-- Rundown Grids -->
+      <!-- Recent draw history, with the picked digits highlighted -->
       <div class="r730-card">
-        <div class="r730-section-label">📋 All Rundown Grids</div>
-        <div id="r730-grids" class="r730-grids-container"></div>
+        <div class="r730-section-label">📋 Recent Draw History — Selection Highlighted</div>
+        <p class="r730-note" style="margin-top:-6px;">Cells that match the #1 pick's digit at that position are highlighted. This is the data the model scored to make its pick.</p>
+        <div id="r730-history-grid" class="r730-history-grid-container"></div>
       </div>
 
-      <!-- Mirror Numbers -->
+      <!-- Calculation breakdown -->
       <div class="r730-card">
-        <div class="r730-section-label">🪞 Mirror Number Reference</div>
-        <div class="r730-mirror-ref">
-          <div class="r730-mirror-pair"><span class="r730-m-orig">0</span><span class="r730-m-arrow">↔</span><span class="r730-m-mirr">5</span></div>
-          <div class="r730-mirror-pair"><span class="r730-m-orig">1</span><span class="r730-m-arrow">↔</span><span class="r730-m-mirr">6</span></div>
-          <div class="r730-mirror-pair"><span class="r730-m-orig">2</span><span class="r730-m-arrow">↔</span><span class="r730-m-mirr">7</span></div>
-          <div class="r730-mirror-pair"><span class="r730-m-orig">3</span><span class="r730-m-arrow">↔</span><span class="r730-m-mirr">8</span></div>
-          <div class="r730-mirror-pair"><span class="r730-m-orig">4</span><span class="r730-m-arrow">↔</span><span class="r730-m-mirr">9</span></div>
-        </div>
-      </div>
-
-      <!-- Method performance -->
-      <div class="r730-card">
-        <div class="r730-section-label">📈 Method Hit Rates (Historical Backtest)</div>
-        <div id="r730-perf" class="r730-perf"></div>
-        <p class="r730-note">Hit rate = % of draws where the next Pick 3 result appeared in that method's 10-row grid or its mirrors.</p>
+        <div class="r730-section-label">🧮 How These Numbers Were Calculated</div>
+        <p class="r730-note" style="margin-top:-6px;">Per digit-position score = weighted blend of recent frequency, all-time frequency, and how overdue ("due") the digit is. Top-scoring digit per position is highlighted.</p>
+        <div id="r730-calc" class="r730-calc-container"></div>
       </div>
 
     </div><!-- /r730-output -->
 
     <!-- Disclaimer -->
-    <p class="r730-disclaimer">⚠️ The 730 Rundown is a pattern-tracking tool, not a guaranteed prediction system. Lottery draws are random. Play responsibly.</p>
+    <p class="r730-disclaimer">⚠️ The 730 Predictor is a statistical pattern-tracking tool, not a guaranteed prediction system. Pick 3 draws are independent random events — no model can reliably beat that. Play responsibly.</p>
   </div>
 </div>
 
@@ -2108,11 +2098,11 @@ function renderSmartPick() {
 .r730-picks-explainer { font-size:.78rem; color:#64748b; margin-bottom:14px; line-height:1.5; }
 
 /* Pick #1 hero card */
-.r730-pick-hero { display:flex; align-items:center; gap:20px; background:linear-gradient(135deg,#7c3aed,#4f46e5); border-radius:16px; padding:20px 24px; margin-bottom:14px; box-shadow:0 4px 24px rgba(124,58,237,.3); }
+.r730-pick-hero { display:flex; flex-wrap:wrap; align-items:center; gap:20px; background:linear-gradient(135deg,#7c3aed,#4f46e5); border-radius:16px; padding:20px 24px; margin-bottom:14px; box-shadow:0 4px 24px rgba(124,58,237,.3); }
 .r730-pick-hero-label { color:rgba(255,255,255,.7); font-size:.7rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase; margin-bottom:4px; }
 .r730-pick-hero-num { display:flex; gap:10px; }
 .r730-pick-hero-digit { width:56px; height:56px; display:flex; align-items:center; justify-content:center; border-radius:50%; font-size:1.7rem; font-weight:800; background:white; color:#7c3aed; box-shadow:0 2px 8px rgba(0,0,0,.15); }
-.r730-pick-hero-meta { margin-left:auto; text-align:right; }
+.r730-pick-hero-meta { margin-left:auto; text-align:right; min-width:130px; }
 .r730-pick-hero-conf { color:white; font-size:1.5rem; font-weight:800; }
 .r730-pick-hero-sublabel { color:rgba(255,255,255,.65); font-size:.7rem; }
 .r730-pick-hero-badge { background:rgba(255,255,255,.2); border-radius:20px; padding:3px 10px; font-size:.7rem; color:white; font-weight:700; display:inline-block; margin-top:6px; }
@@ -2145,35 +2135,34 @@ function renderSmartPick() {
 .r730-hit-badge.hit { background:#dcfce7; color:#16a34a; }
 .r730-hit-badge.miss { background:#fee2e2; color:#dc2626; }
 
-/* Rundown grids */
-.r730-grids-container { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:14px; }
-.r730-grid-block { background:#f8fafc; border:1.5px solid #e2e8f0; border-radius:10px; overflow:hidden; }
-.r730-grid-block.best-method { border-color:#7c3aed; background:linear-gradient(135deg,rgba(124,58,237,.04),white); }
-.r730-grid-title { padding:8px 12px; background:#1e293b; color:white; font-size:.75rem; font-weight:700; display:flex; justify-content:space-between; align-items:center; }
-.r730-grid-hitrate { background:#7c3aed; border-radius:20px; padding:2px 7px; font-size:.65rem; }
-.r730-grid-table { width:100%; border-collapse:collapse; font-size:.82rem; }
-.r730-grid-table td { padding:4px 8px; text-align:center; border-bottom:1px solid #e2e8f0; font-family:monospace; font-weight:600; }
-.r730-grid-table tr:last-child td { border-bottom:none; }
-.r730-grid-table .r730-row-num { color:#94a3b8; font-size:.7rem; font-weight:400; }
-.r730-grid-table .r730-d { color:#1e293b; font-size:1rem; }
-.r730-grid-table .r730-m { color:#7c3aed; font-size:.85rem; }
-.r730-grid-table tr.highlight-row { background:rgba(124,58,237,.1); }
-.r730-grid-table tr.highlight-row .r730-d { color:#7c3aed; }
+/* Backtest summary strip (inside picks card) */
+.r730-backtest-summary { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
+.r730-bt-tile { flex:1; min-width:120px; background:#f8fafc; border:1.5px solid #e2e8f0; border-radius:10px; padding:10px 12px; }
+.r730-bt-tile-val { font-size:1.2rem; font-weight:800; color:#7c3aed; }
+.r730-bt-tile-label { font-size:.68rem; color:#64748b; font-weight:600; margin-top:2px; }
 
-/* Mirror ref */
-.r730-mirror-ref { display:flex; gap:14px; flex-wrap:wrap; }
-.r730-mirror-pair { display:flex; align-items:center; gap:6px; background:#f1f5f9; border-radius:8px; padding:8px 14px; }
-.r730-m-orig { font-size:1.3rem; font-weight:700; color:#1e293b; }
-.r730-m-arrow { color:#94a3b8; font-size:1rem; }
-.r730-m-mirr { font-size:1.3rem; font-weight:700; color:#7c3aed; }
+/* Recent draw history grid */
+.r730-history-grid-container { overflow-x:auto; }
+.r730-history-table { width:100%; border-collapse:collapse; font-size:.82rem; }
+.r730-history-table th { text-align:center; color:#94a3b8; font-size:.68rem; font-weight:700; padding:4px 8px; text-transform:uppercase; letter-spacing:.04em; }
+.r730-history-table td { padding:5px 8px; text-align:center; border-bottom:1px solid #f1f5f9; }
+.r730-history-table .r730-h-date { color:#64748b; font-size:.72rem; text-align:left; white-space:nowrap; }
+.r730-history-table .r730-h-tod { color:#94a3b8; font-size:.7rem; }
+.r730-history-table .r730-h-digit { font-family:monospace; font-weight:700; color:#1e293b; font-size:.95rem; border-radius:6px; }
+.r730-history-table .r730-h-digit.match { background:rgba(124,58,237,.14); color:#7c3aed; }
+.r730-history-table tr.r730-h-base-row { background:#f5f3ff; }
+.r730-history-table tr.r730-h-base-row td { font-weight:700; }
 
-/* Performance bars */
-.r730-perf { display:flex; flex-direction:column; gap:8px; }
-.r730-perf-row { display:flex; align-items:center; gap:10px; }
-.r730-perf-name { font-size:.8rem; font-weight:700; color:#1e293b; min-width:60px; }
-.r730-perf-bar-bg { flex:1; height:10px; background:#f1f5f9; border-radius:5px; overflow:hidden; }
-.r730-perf-bar { height:100%; background:linear-gradient(90deg,#7c3aed,#4f46e5); border-radius:5px; transition:width .6s ease; }
-.r730-perf-pct { font-size:.8rem; font-weight:700; color:#64748b; min-width:40px; text-align:right; }
+/* Calculation breakdown */
+.r730-calc-container { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px; }
+.r730-calc-pos { background:#f8fafc; border:1.5px solid #e2e8f0; border-radius:10px; overflow-x:auto; }
+.r730-calc-pos-title { padding:8px 12px; background:#1e293b; color:white; font-size:.72rem; font-weight:700; }
+.r730-calc-table { width:100%; border-collapse:collapse; font-size:.72rem; white-space:nowrap; }
+.r730-calc-table th { padding:4px 3px; color:#94a3b8; font-weight:700; font-size:.62rem; text-align:center; }
+.r730-calc-table td { padding:4px 3px; text-align:center; border-top:1px solid #e2e8f0; }
+.r730-calc-table .r730-calc-digit { font-family:monospace; font-weight:700; color:#1e293b; }
+.r730-calc-table tr.r730-calc-top { background:rgba(124,58,237,.1); }
+.r730-calc-table tr.r730-calc-top .r730-calc-digit { color:#7c3aed; }
 
 .r730-disclaimer { font-size:.72rem; color:#94a3b8; text-align:center; margin-top:4px; }
 
@@ -2197,93 +2186,161 @@ function renderSmartPick() {
 </style>
 
 <script>
-// ── 730 Rule Logic ────────────────────────────────────────────────────────
+// ── 730 Predictor Logic ──────────────────────────────────────────────────
+// Statistical model: for each digit position (0,1,2), score each digit 0-9 by
+// a weighted blend of (a) recent frequency, (b) all-time frequency, and
+// (c) how "due" it is (draws since it last appeared). Candidate 3-digit
+// numbers are ranked by the sum of their per-position digit scores.
+// The weight blend is chosen by walk-forward backtesting a handful of
+// presets against the full historical draw history and keeping whichever
+// preset actually hits real historical draws most often.
 
-// Rundown methods: [step-for-digit-0, step-for-digit-1, step-for-digit-2]
-const RUNDOWN_METHODS = {
-  '730': [7, 3, 0],
-  '317': [3, 1, 7],
-  '123': [1, 2, 3],
-  '321': [3, 2, 1],
-  '111': [1, 1, 1],
-  '222': [2, 2, 2],
-  '456': [4, 5, 6],
-  '963': [9, 6, 3],
-};
+const WEIGHT_PRESETS = [
+  { name: 'Balanced',       alpha: 1,   beta: 1,   gamma: 1   },
+  { name: 'Hot-heavy',      alpha: 1.5, beta: 0.5, gamma: 0.5 },
+  { name: 'Due-heavy',      alpha: 0.5, beta: 0.5, gamma: 1.5 },
+  { name: 'Frequency-only', alpha: 0,   beta: 1.5, gamma: 0   },
+  { name: 'Recency-only',   alpha: 1.5, beta: 0,   gamma: 0   },
+];
+const RECENT_WINDOW = 60;      // draws considered "recent" for the hot-digit signal
+const CANDIDATES_PER_POS = 4;  // top-K digits per position combined into candidate numbers
+const MIN_BACKTEST_INDEX = 60; // need this many draws of history before backtesting starts
 
 let r730DrawType = 'Midday';
-let r730AllPick3 = [];  // all pick3 draws from nj_data.json, sorted newest first
-let r730BacktestRates = {};
+let r730AllPick3 = [];          // raw draws from nj_data.json, newest first (for date-picker lookups)
+let r730Chrono = [];            // {date, time, digits:[d0,d1,d2]} sorted OLDEST → NEWEST
+let r730IndexByKey = new Map(); // "YYYY-MM-DD_Midday" -> index into r730Chrono
+let r730Weights = WEIGHT_PRESETS[0];
+let r730BacktestInfo = null;    // { name, total, top5ExactRate, atLeast1Rate, top1ExactRate }
 
-// Mirror: add 5 mod 10 to each digit
-const mirrorDigits = d => d.map(x => (x + 5) % 10);
+// ── Core scoring model ──────────────────────────────────────────────────
+// Frequency/due stats for one digit-position, using only draws chrono[0..uptoIndex]
+function digitStatsAt(chrono, uptoIndex, pos, recentWindow) {
+  const overallCount = new Array(10).fill(0);
+  const recentCount  = new Array(10).fill(0);
+  const lastSeen     = new Array(10).fill(-1);
+  const start = Math.max(0, uptoIndex - recentWindow + 1);
 
-// Apply one rundown step (10 rows including base)
-function applyRundown(baseDigits, step, rows = 10) {
-  const grid = [baseDigits.map(Number)];
-  for (let r = 1; r < rows; r++) {
-    const prev = grid[r - 1];
-    grid.push(prev.map((d, i) => (d + step[i]) % 10));
+  for (let i = 0; i <= uptoIndex; i++) {
+    const d = chrono[i].digits[pos];
+    overallCount[d]++;
+    lastSeen[d] = i;
+    if (i >= start) recentCount[d]++;
   }
-  return grid;
+
+  const totalAll = uptoIndex + 1;
+  const totalRecent = uptoIndex - start + 1;
+  const stats = {};
+  for (let d = 0; d <= 9; d++) {
+    stats[d] = {
+      overallFreq: overallCount[d] / totalAll,
+      recentFreq: recentCount[d] / totalRecent,
+      gap: lastSeen[d] === -1 ? uptoIndex + 1 : uptoIndex - lastSeen[d],
+    };
+  }
+  return stats;
 }
 
-// Check if a digits array matches target
-const digitsMatch = (a, b) => a.length === b.length && a.every((v, i) => v === b[i]);
-
-// Backtest: what % of consecutive draw pairs does each method cover?
-function backtestAllMethods(draws) {
-  // draws = [{date, time, numbers:[str,str,str]}, ...] newest first
-  // consecutive pairs: index i → base, index i+1 → next (older)
-  const results = {};
-  for (const [name, step] of Object.entries(RUNDOWN_METHODS)) {
-    let hits = 0, total = 0;
-    for (let i = 0; i < draws.length - 1; i++) {
-      const base = draws[i].numbers.map(Number);
-      const next = draws[i + 1].numbers.map(Number);
-      const grid = applyRundown(base, step, 10);
-      let hit = false;
-      for (const row of grid) {
-        if (digitsMatch(row, next) || digitsMatch(mirrorDigits(row), next)) {
-          hit = true; break;
-        }
-      }
-      if (hit) hits++;
-      total++;
-    }
-    results[name] = total > 0 ? hits / total : 0;
-  }
-  return results;
-}
-
-// Generate consensus picks: score each 000-999 number by weighted method agreement
-function getConsensusPicks(baseDigits, methodRates, topN = 8) {
-  // candidate → score
+// Blend the three signals into one score per digit. 0.1 = uniform baseline (1-in-10).
+function scoreDigits(stats, weights) {
   const scores = {};
-
-  for (const [name, step] of Object.entries(RUNDOWN_METHODS)) {
-    const weight = methodRates[name] || 0.01;
-    const grid = applyRundown(baseDigits, step, 10);
-    grid.forEach((row, rowIdx) => {
-      // row bonus: earlier rows (lower index) get slight boost as they're "nearer"
-      const rowBonus = 1 - rowIdx * 0.05;
-      const addScore = (digits) => {
-        const key = digits.join('');
-        scores[key] = (scores[key] || 0) + weight * rowBonus;
-      };
-      addScore(row);
-      addScore(mirrorDigits(row));
-    });
+  for (let d = 0; d <= 9; d++) {
+    const s = stats[d];
+    const gapScore = Math.min(s.gap / 10, 3) - 1; // 0 at the expected gap of 10 draws
+    scores[d] = weights.alpha * (s.recentFreq - 0.1)
+              + weights.beta  * (s.overallFreq - 0.1)
+              + weights.gamma * gapScore;
   }
+  return scores;
+}
 
+function topKDigits(scores, k) {
   return Object.entries(scores)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, topN)
-    .map(([num, score]) => ({
-      digits: num.split('').map(Number),
-      score,
-      pct: Math.round(Math.min(score * 100, 99))
-    }));
+    .map(([d, score]) => ({ digit: +d, score }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, k);
+}
+
+// Predict candidate numbers using only history up to and including chrono[uptoIndex].
+function predictCombosAt(chrono, uptoIndex, weights, K = CANDIDATES_PER_POS, recentWindow = RECENT_WINDOW) {
+  const posStats  = [0, 1, 2].map(pos => digitStatsAt(chrono, uptoIndex, pos, recentWindow));
+  const posScores = posStats.map(st => scoreDigits(st, weights));
+  const posTop    = posScores.map(sc => topKDigits(sc, K));
+
+  const combos = [];
+  for (const a of posTop[0]) for (const b of posTop[1]) for (const c of posTop[2]) {
+    combos.push({ digits: [a.digit, b.digit, c.digit], score: a.score + b.score + c.score });
+  }
+  combos.sort((x, y) => y.score - x.score);
+  return { combos, posStats, posScores, posTop };
+}
+
+// Honest estimated probability for one candidate: the product of each digit's
+// smoothed historical frequency at that position. This is deliberately NOT
+// derived from the ranking score above (which also factors in the due/gap
+// signal) — it's a real, independently-computed probability estimate, so it
+// stays close to the fair-draw baseline of 0.1% rather than implying false
+// confidence. Positions are treated as independent, which real Pick 3 draws are.
+function comboProbability(posStats, digits) {
+  return digits.reduce((acc, d, pos) => {
+    const s = posStats[pos][d];
+    const pHat = 0.5 * s.recentFreq + 0.5 * s.overallFreq; // valid distribution, sums to 1 over d
+    return acc * pHat;
+  }, 1);
+}
+
+// ── Walk-forward backtest ────────────────────────────────────────────────
+// For every historical draw t, predict draw t+1 using ONLY draws [0..t] — no lookahead.
+function backtestWeights(chrono, weights, minIndex = MIN_BACKTEST_INDEX) {
+  let top1Exact = 0, top5Exact = 0, atLeast1 = 0, total = 0;
+  for (let t = minIndex; t < chrono.length - 1; t++) {
+    const { combos } = predictCombosAt(chrono, t, weights);
+    const baseStr = chrono[t].digits.join('');
+    const filtered = combos.filter(c => c.digits.join('') !== baseStr);
+    const list = filtered.length ? filtered : combos;
+    const actual = chrono[t + 1].digits;
+    const actualStr = actual.join('');
+    const top1 = list[0];
+
+    if (top1.digits.join('') === actualStr) top1Exact++;
+    if (list.slice(0, 5).some(c => c.digits.join('') === actualStr)) top5Exact++;
+    if (top1.digits.some((d, i) => d === actual[i])) atLeast1++;
+    total++;
+  }
+  return {
+    total,
+    top1ExactRate: total ? top1Exact / total : 0,
+    top5ExactRate: total ? top5Exact / total : 0,
+    atLeast1Rate: total ? atLeast1 / total : 0,
+  };
+}
+
+// Try each weight preset, keep whichever actually performs best on real history.
+function chooseBestWeights(chrono) {
+  if (chrono.length <= MIN_BACKTEST_INDEX + 1) {
+    return { weights: WEIGHT_PRESETS[0], name: WEIGHT_PRESETS[0].name, total: 0, top5ExactRate: 0, atLeast1Rate: 0, top1ExactRate: 0 };
+  }
+  let best = null;
+  for (const preset of WEIGHT_PRESETS) {
+    const metrics = backtestWeights(chrono, preset);
+    if (!best || metrics.top5ExactRate > best.top5ExactRate ||
+        (metrics.top5ExactRate === best.top5ExactRate && metrics.atLeast1Rate > best.atLeast1Rate)) {
+      best = { weights: preset, name: preset.name, ...metrics };
+    }
+  }
+  return best;
+}
+
+// ── Chronological sequence built from nj_data.json ──────────────────────
+function buildChrono(draws) {
+  const timeRank = { Midday: 0, Evening: 1 };
+  const chrono = draws
+    .map(d => ({ date: d.date.split('T')[0], time: d.time, digits: d.numbers.slice(0, 3).map(Number) }))
+    .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : timeRank[a.time] - timeRank[b.time]));
+
+  const indexByKey = new Map();
+  chrono.forEach((d, i) => indexByKey.set(`${d.date}_${d.time}`, i));
+  return { chrono, indexByKey };
 }
 
 // ── NJ Eastern Time helpers ───────────────────────────────────────────────
@@ -2313,8 +2370,13 @@ async function init730() {
 
   r730AllPick3 = pick3; // newest first
 
-  // Backtest all methods against historical data
-  r730BacktestRates = backtestAllMethods(r730AllPick3);
+  const { chrono, indexByKey } = buildChrono(pick3);
+  r730Chrono = chrono;
+  r730IndexByKey = indexByKey;
+
+  // Backtest all weight presets against real historical draws, keep the winner
+  r730BacktestInfo = chooseBestWeights(r730Chrono);
+  r730Weights = r730BacktestInfo.weights;
 
   // Set up the date input: min = oldest date, max = today (NJ ET)
   const dateSel = document.getElementById('r730-date-sel');
@@ -2338,13 +2400,6 @@ async function init730() {
 
   r730SetDraw('Midday');
   r730UpdateNumber();
-}
-
-function formatDisplayDate(iso) {
-  // iso = "2026-08-11" — format as "Aug 11, 2026" (NJ dates stored as local ET dates)
-  const [y, m, d] = iso.split('-');
-  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  return `${months[+m - 1]} ${+d}, ${y} · NJ ET`;
 }
 
 function r730SetDraw(type) {
@@ -2421,40 +2476,74 @@ function r730Predict() {
      &nbsp;·&nbsp; NJ Eastern Time
      &nbsp;│&nbsp; Base: ${months[+bm-1]} ${+bd}, ${by} ${r730DrawType}
      &rarr; <strong>${baseDigits.join('-')}</strong>`;
-  // Top consensus picks
-  const picks = getConsensusPicks(baseDigits, r730BacktestRates, 8);
-  renderTopPicks(picks, baseDigits);
+
+  // Find where this base draw sits in the chronological sequence, so the model
+  // only uses data that would actually have been available at that point in time.
+  const baseKey = `${dateStr}_${r730DrawType}`;
+  const baseIndex = r730IndexByKey.has(baseKey)
+    ? r730IndexByKey.get(baseKey)
+    : r730Chrono.length - 1; // fallback: use all available history
+
+  const { combos, posStats, posScores } = predictCombosAt(r730Chrono, baseIndex, r730Weights);
+  const baseStr = baseDigits.join('');
+  const filtered = combos.filter(c => c.digits.join('') !== baseStr);
+  const candidates = (filtered.length ? filtered : combos).slice(0, 10);
+  const picks = candidates.map(c => ({ ...c, pct: comboProbability(posStats, c.digits) * 100 }));
+
+  renderBacktestSummary();
+  renderTopPicks(picks);
 
   // Check if we actually have the result (historical verification)
   const actualMatch = r730AllPick3.find(d => d.date.startsWith(nextDate) && d.time === nextType);
   renderActualResult(actualMatch, picks);
 
-  // Render grids
-  renderAllGrids(baseDigits, actualMatch ? actualMatch.numbers.map(Number) : null);
+  // Highlight the #1 pick's digits against recent real draw history
+  renderHistoryGrid(baseIndex, picks[0].digits, posStats);
 
-  // Render performance bars
-  renderPerfBars();
+  // Show the per-position stats behind the scoring
+  renderCalc(posStats, posScores, picks[0].digits);
 
   document.getElementById('r730-output').style.display = 'block';
   document.getElementById('r730-output').scrollIntoView({ behavior:'smooth', block:'start' });
 }
 
-function renderTopPicks(picks, baseDigits) {
+function renderBacktestSummary() {
+  const container = document.getElementById('r730-backtest-summary');
+  if (!r730BacktestInfo || !r730BacktestInfo.total) {
+    container.innerHTML = '';
+    return;
+  }
+  const { total, top5ExactRate, atLeast1Rate } = r730BacktestInfo;
+  // Fair-draw baselines, for comparison: top-5 exact = 5/1000, ≥1-of-3 digits = 1-0.9^3
+  const baselineTop5 = 0.005;
+  const baselineAtLeast1 = 1 - Math.pow(0.9, 3);
+
+  container.innerHTML = `
+    <div class="r730-bt-tile">
+      <div class="r730-bt-tile-val">${(top5ExactRate*100).toFixed(2)}%</div>
+      <div class="r730-bt-tile-label">Top-5 exact-match rate<br>(random baseline: ${(baselineTop5*100).toFixed(1)}%)</div>
+    </div>
+    <div class="r730-bt-tile">
+      <div class="r730-bt-tile-val">${(atLeast1Rate*100).toFixed(1)}%</div>
+      <div class="r730-bt-tile-label">&ge;1 digit correct (#1 pick)<br>(random baseline: ${(baselineAtLeast1*100).toFixed(1)}%)</div>
+    </div>
+    <div class="r730-bt-tile">
+      <div class="r730-bt-tile-val">${total}</div>
+      <div class="r730-bt-tile-label">historical draws backtested<br>(model: ${r730BacktestInfo.name})</div>
+    </div>
+  `;
+}
+
+function renderTopPicks(picks) {
   const container = document.getElementById('r730-top-picks');
-  const baseStr = baseDigits.join('');
 
-  // Filter out the base number itself — it's always row 1 of every rundown,
-  // showing it as a "prediction" is misleading
-  const filtered = picks.filter(p => p.digits.join('') !== baseStr);
-  const display  = filtered.length >= 5 ? filtered : picks; // fallback if all filtered
-
-  if (!display.length) {
+  if (!picks.length) {
     container.innerHTML = '<p style="color:#94a3b8;font-size:.85rem">Not enough data to rank picks.</p>';
     return;
   }
 
-  const top   = display[0];
-  const rest  = display.slice(1, 5); // show #2–#5 as runner-ups
+  const top   = picks[0];
+  const rest  = picks.slice(1, 5); // show #2–#5 as runner-ups
   const rankBgClass = ['rank-2-bg','rank-3-bg','rank-4-bg','rank-5-bg'];
   const rankLabel   = ['#2','#3','#4','#5'];
   const rankClass   = ['rank-2','rank-3','rank-4','rank-5'];
@@ -2470,8 +2559,8 @@ function renderTopPicks(picks, baseDigits) {
         <div class="r730-pick-hero-badge">Play straight &amp; box</div>
       </div>
       <div class="r730-pick-hero-meta">
-        <div class="r730-pick-hero-conf">${top.pct}%</div>
-        <div class="r730-pick-hero-sublabel">agreement score</div>
+        <div class="r730-pick-hero-conf">${top.pct.toFixed(2)}%</div>
+        <div class="r730-pick-hero-sublabel">est. probability<br>(baseline 0.10%)</div>
       </div>
     </div>
 
@@ -2483,10 +2572,11 @@ function renderTopPicks(picks, baseDigits) {
           <div class="r730-pick-row-digits">
             ${p.digits.map(d => `<div class="r730-pick-row-digit">${d}</div>`).join('')}
           </div>
-          <div class="r730-pick-row-conf">${p.pct}%<span>agreement</span></div>
+          <div class="r730-pick-row-conf">${p.pct.toFixed(2)}%<span>est. probability</span></div>
         </div>
       `).join('')}
     </div>
+    <p class="r730-note">Estimated probability is computed directly from this digit's historical frequency at this position — it is a real (small) estimate, not a marketing number. On a truly fair draw every straight combo is 0.10%.</p>
   `;
 }
 
@@ -2513,7 +2603,7 @@ function renderActualResult(actualDraw, picks) {
       </div>
       <div>
         <div class="r730-hit-badge ${isHit ? 'hit' : 'miss'}">
-          ${isHit ? `✅ HIT — Pick #${hitRank+1} was correct!` : '❌ Not in top 5 — see grids below'}
+          ${isHit ? `✅ HIT — Pick #${hitRank+1} was correct!` : '❌ Not in top 5 this time'}
         </div>
         <div style="font-size:.75rem;color:#94a3b8;margin-top:4px;">Actual result: <strong>${actualStr}</strong></div>
       </div>
@@ -2521,77 +2611,75 @@ function renderActualResult(actualDraw, picks) {
   `;
 }
 
-function renderAllGrids(baseDigits, actualNext) {
-  const container = document.getElementById('r730-grids');
-  container.innerHTML = '';
+// Recent draw history table, with the #1 pick's digits highlighted where they occur.
+// The window is widened (up to a cap) so a digit picked mainly for being "due"
+// still shows its actual last occurrence — otherwise it would show zero matches
+// by construction, which looks like a bug rather than the due signal working.
+function renderHistoryGrid(baseIndex, topDigits, posStats) {
+  const container = document.getElementById('r730-history-grid');
+  const gaps = topDigits.map((d, pos) => posStats[pos][d].gap);
+  const HISTORY_ROWS = Math.min(60, Math.max(20, ...gaps) + 3);
+  const start = Math.max(0, baseIndex - HISTORY_ROWS + 1);
+  const rows = r730Chrono.slice(start, baseIndex + 1).slice().reverse(); // newest first
 
-  // Sort methods by hit rate desc
-  const sorted = Object.entries(RUNDOWN_METHODS)
-    .sort((a,b) => (r730BacktestRates[b[0]]||0) - (r730BacktestRates[a[0]]||0));
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const fmtDate = iso => {
+    const [y, m, d] = iso.split('-');
+    return `${months[+m - 1]} ${+d}`;
+  };
 
-  sorted.forEach(([name, step], mIdx) => {
-    const grid = applyRundown(baseDigits, step, 10);
-    const rate = r730BacktestRates[name] || 0;
-    const isBest = mIdx === 0;
-
-    const block = document.createElement('div');
-    block.className = `r730-grid-block${isBest ? ' best-method' : ''}`;
-
-    const rows = grid.map((row, ri) => {
-      const mirr = mirrorDigits(row);
-      const rowStr = row.join('');
-      const mirrStr = mirr.join('');
-      const isActualRow = actualNext && (rowStr === actualNext.join('') || mirrStr === actualNext.join(''));
-      return `<tr class="${isActualRow ? 'highlight-row' : ''}">
-        <td class="r730-row-num">${ri + 1}</td>
-        <td class="r730-d">${row[0]}</td>
-        <td class="r730-d">${row[1]}</td>
-        <td class="r730-d">${row[2]}</td>
-        <td style="color:#c7d2fe;font-size:.7rem;">|</td>
-        <td class="r730-m">${mirr[0]}</td>
-        <td class="r730-m">${mirr[1]}</td>
-        <td class="r730-m">${mirr[2]}</td>
-      </tr>`;
+  const bodyRows = rows.map(row => {
+    const isBase = row.date === r730Chrono[baseIndex].date && row.time === r730Chrono[baseIndex].time;
+    const cells = row.digits.map((d, pos) => {
+      const isMatch = d === topDigits[pos];
+      return `<td class="r730-h-digit${isMatch ? ' match' : ''}">${d}</td>`;
     }).join('');
+    return `<tr class="${isBase ? 'r730-h-base-row' : ''}">
+      <td class="r730-h-date">${fmtDate(row.date)}${isBase ? ' · base' : ''}</td>
+      <td class="r730-h-tod">${row.time}</td>
+      ${cells}
+    </tr>`;
+  }).join('');
 
-    block.innerHTML = `
-      <div class="r730-grid-title">
-        +${step.join('+')} · ${name}
-        <span class="r730-grid-hitrate">${Math.round(rate*100)}% hit</span>
-      </div>
-      <table class="r730-grid-table">
-        <thead>
-          <tr>
-            <td style="color:#94a3b8;font-size:.65rem;">#</td>
-            <td style="color:#93c5fd">D1</td>
-            <td style="color:#93c5fd">D2</td>
-            <td style="color:#93c5fd">D3</td>
-            <td></td>
-            <td style="color:#c4b5fd">M1</td>
-            <td style="color:#c4b5fd">M2</td>
-            <td style="color:#c4b5fd">M3</td>
-          </tr>
-        </thead>
-        <tbody>${rows}</tbody>
-      </table>`;
-    container.appendChild(block);
-  });
+  container.innerHTML = `
+    <table class="r730-history-table">
+      <thead><tr><th style="text-align:left;">Date</th><th>Draw</th><th>D1</th><th>D2</th><th>D3</th></tr></thead>
+      <tbody>${bodyRows}</tbody>
+    </table>
+  `;
 }
 
-function renderPerfBars() {
-  const container = document.getElementById('r730-perf');
-  const sorted = Object.entries(r730BacktestRates).sort((a,b)=>b[1]-a[1]);
-  const maxRate = sorted[0]?.[1] || 1;
+// Per-position digit score breakdown, with the chosen digit highlighted
+function renderCalc(posStats, posScores, topDigits) {
+  const container = document.getElementById('r730-calc');
+  const posLabels = ['Position 1 (hundreds)', 'Position 2 (tens)', 'Position 3 (units)'];
 
-  container.innerHTML = sorted.map(([name, rate]) => `
-    <div class="r730-perf-row">
-      <div class="r730-perf-name">${name}</div>
-      <div class="r730-perf-bar-bg">
-        <div class="r730-perf-bar" style="width:${Math.round(rate/maxRate*100)}%"></div>
+  container.innerHTML = posLabels.map((label, pos) => {
+    const rows = Object.entries(posScores[pos])
+      .map(([d, score]) => ({ digit: +d, score, stats: posStats[pos][+d] }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 6);
+
+    const rowsHtml = rows.map(r => `
+      <tr class="${r.digit === topDigits[pos] ? 'r730-calc-top' : ''}">
+        <td class="r730-calc-digit">${r.digit}</td>
+        <td>${(r.stats.recentFreq*100).toFixed(1)}%</td>
+        <td>${(r.stats.overallFreq*100).toFixed(1)}%</td>
+        <td>${r.stats.gap}</td>
+        <td>${r.score.toFixed(2)}</td>
+      </tr>
+    `).join('');
+
+    return `
+      <div class="r730-calc-pos">
+        <div class="r730-calc-pos-title">${label}</div>
+        <table class="r730-calc-table">
+          <thead><tr><th>Digit</th><th>Recent</th><th>All-time</th><th>Due</th><th>Score</th></tr></thead>
+          <tbody>${rowsHtml}</tbody>
+        </table>
       </div>
-      <div class="r730-perf-pct">${Math.round(rate*100)}%</div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
 }
 
 // switchGame handles rule730 in the original definition above — nothing extra needed here.
