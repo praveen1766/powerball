@@ -460,7 +460,7 @@
   <button class="game-btn active" data-game="powerball">Powerball</button>
   <button class="game-btn" data-game="pick3">Play 3</button>
   <button class="game-btn" data-game="pick4">Play 4</button>
-  <button class="game-btn game-btn-730" data-game="rule730">🔮 730 Rule</button>
+  <button class="game-btn game-btn-730" data-game="rule730">🔮 Predictor</button>
 </div>
 
 <p id="main-subtitle" class="subtitle">Interactive visualizer with historical pattern analysis</p>
@@ -1976,8 +1976,8 @@ function renderSmartPick() {
       <div class="r730-header-left">
         <div class="r730-icon">🔮</div>
         <div>
-          <h2 class="r730-title">730 Predictor</h2>
-          <p class="r730-sub">Digit-frequency &amp; due-number model · NJ Pick 3 · Midday &amp; Evening</p>
+          <h2 class="r730-title">Pick 3 Predictor</h2>
+          <p class="r730-sub">Frequency, due-number &amp; correlation model · NJ Pick 3 · Midday &amp; Evening</p>
         </div>
       </div>
       <div class="r730-badge">BETA</div>
@@ -2020,7 +2020,7 @@ function renderSmartPick() {
       <!-- Top Picks -->
       <div class="r730-card r730-picks-card">
         <div class="r730-section-label">🎯 Predicted Numbers — Play These</div>
-        <div class="r730-picks-explainer">Ranked by a digit-frequency &amp; due-number model, backtested against real historical draws. <strong>#1 is your strongest pick.</strong></div>
+        <div class="r730-picks-explainer">Ranked by a model blending recent/all-time frequency, due-number, and correlation signals (what tends to follow this number, and which digits co-occur) — backtested against real historical draws. <strong>#1 is your strongest pick.</strong></div>
         <div id="r730-backtest-summary" class="r730-backtest-summary"></div>
         <div id="r730-top-picks" class="r730-top-picks"></div>
       </div>
@@ -2041,14 +2041,21 @@ function renderSmartPick() {
       <!-- Calculation breakdown -->
       <div class="r730-card">
         <div class="r730-section-label">🧮 How These Numbers Were Calculated</div>
-        <p class="r730-note" style="margin-top:-6px;">Per digit-position score = weighted blend of recent frequency, all-time frequency, and how overdue ("due") the digit is. Top-scoring digit per position is highlighted.</p>
+        <p class="r730-note" style="margin-top:-6px;">Per digit-position score = weighted blend of recent frequency, all-time frequency, how overdue ("due") the digit is, and how often it has historically followed the base number's digit at this position ("Follows"). Top-scoring digit per position is highlighted.</p>
         <div id="r730-calc" class="r730-calc-container"></div>
+      </div>
+
+      <!-- Cross-position correlation -->
+      <div class="r730-card">
+        <div class="r730-section-label">🔗 Correlation Between Digits (#1 Pick)</div>
+        <p class="r730-note" style="margin-top:-6px;">Whether the #1 pick's own digit pairs have historically shown up together in the same draw more or less often than pure chance would predict.</p>
+        <div id="r730-correlation" class="r730-history-grid-container"></div>
       </div>
 
     </div><!-- /r730-output -->
 
     <!-- Disclaimer -->
-    <p class="r730-disclaimer">⚠️ The 730 Predictor is a statistical pattern-tracking tool, not a guaranteed prediction system. Pick 3 draws are independent random events — no model can reliably beat that. Play responsibly.</p>
+    <p class="r730-disclaimer">⚠️ The Pick 3 Predictor is a statistical pattern-tracking tool, not a guaranteed prediction system. Pick 3 draws are independent random events — no model can reliably beat that. Play responsibly.</p>
   </div>
 </div>
 
@@ -2164,6 +2171,11 @@ function renderSmartPick() {
 .r730-calc-table tr.r730-calc-top { background:rgba(124,58,237,.1); }
 .r730-calc-table tr.r730-calc-top .r730-calc-digit { color:#7c3aed; }
 
+/* Correlation verdict tags */
+.r730-corr-tag { font-weight:700; }
+.r730-corr-tag.up { color:#16a34a; }
+.r730-corr-tag.down { color:#dc2626; }
+
 .r730-disclaimer { font-size:.72rem; color:#94a3b8; text-align:center; margin-top:4px; }
 
 /* Date picker input */
@@ -2186,21 +2198,32 @@ function renderSmartPick() {
 </style>
 
 <script>
-// ── 730 Predictor Logic ──────────────────────────────────────────────────
+// ── Pick 3 Predictor Logic ────────────────────────────────────────────────
 // Statistical model: for each digit position (0,1,2), score each digit 0-9 by
-// a weighted blend of (a) recent frequency, (b) all-time frequency, and
-// (c) how "due" it is (draws since it last appeared). Candidate 3-digit
-// numbers are ranked by the sum of their per-position digit scores.
-// The weight blend is chosen by walk-forward backtesting a handful of
-// presets against the full historical draw history and keeping whichever
-// preset actually hits real historical draws most often.
+// a weighted blend of five signals:
+//   (a) recent frequency, (b) all-time frequency, (c) how "due" it is (draws
+//   since it last appeared), (d) TRANSITION correlation — given the specific
+//   base number entered, what has historically followed it at this position
+//   (a first-order Markov signal), and (e) a PAIRWISE correlation bonus at
+//   the candidate-number level — whether a specific pair of digits (e.g.
+//   position 1 & 2 together) has co-occurred in the same draw more or less
+//   often than chance would predict.
+// Candidate 3-digit numbers are ranked by the sum of their per-position
+// scores plus the pairwise-correlation adjustment. The weight blend is
+// chosen by walk-forward backtesting a set of presets against the full
+// historical draw history and keeping whichever preset actually hits real
+// historical draws most often — including presets with the correlation
+// signals OFF, so the backtest itself decides whether they help.
 
 const WEIGHT_PRESETS = [
-  { name: 'Balanced',       alpha: 1,   beta: 1,   gamma: 1   },
-  { name: 'Hot-heavy',      alpha: 1.5, beta: 0.5, gamma: 0.5 },
-  { name: 'Due-heavy',      alpha: 0.5, beta: 0.5, gamma: 1.5 },
-  { name: 'Frequency-only', alpha: 0,   beta: 1.5, gamma: 0   },
-  { name: 'Recency-only',   alpha: 1.5, beta: 0,   gamma: 0   },
+  { name: 'Balanced',          alpha: 1,   beta: 1,   gamma: 1,   delta: 0,   epsilon: 0   },
+  { name: 'Hot-heavy',         alpha: 1.5, beta: 0.5, gamma: 0.5, delta: 0,   epsilon: 0   },
+  { name: 'Due-heavy',         alpha: 0.5, beta: 0.5, gamma: 1.5, delta: 0,   epsilon: 0   },
+  { name: 'Frequency-only',    alpha: 0,   beta: 1.5, gamma: 0,   delta: 0,   epsilon: 0   },
+  { name: 'Recency-only',      alpha: 1.5, beta: 0,   gamma: 0,   delta: 0,   epsilon: 0   },
+  { name: 'Transition-aware',  alpha: 0.7, beta: 0.7, gamma: 0.7, delta: 1.2, epsilon: 0   },
+  { name: 'Pair-aware',        alpha: 0.7, beta: 0.7, gamma: 0.7, delta: 0,   epsilon: 1.0 },
+  { name: 'Correlation-aware', alpha: 0.6, beta: 0.6, gamma: 0.6, delta: 1.0, epsilon: 0.8 },
 ];
 const RECENT_WINDOW = 60;      // draws considered "recent" for the hot-digit signal
 const CANDIDATES_PER_POS = 4;  // top-K digits per position combined into candidate numbers
@@ -2241,15 +2264,57 @@ function digitStatsAt(chrono, uptoIndex, pos, recentWindow) {
   return stats;
 }
 
-// Blend the three signals into one score per digit. 0.1 = uniform baseline (1-in-10).
-function scoreDigits(stats, weights) {
+// Transition (first-order Markov) counts for one position: how often each
+// digit at chrono[i] was immediately followed by each digit at chrono[i+1],
+// using only draws chrono[0..uptoIndex].
+function transitionCountsAt(chrono, uptoIndex, pos) {
+  const counts = Array.from({ length: 10 }, () => new Array(10).fill(0));
+  for (let i = 0; i < uptoIndex; i++) {
+    const prev = chrono[i].digits[pos];
+    const next = chrono[i + 1].digits[pos];
+    counts[prev][next]++;
+  }
+  return counts;
+}
+
+// P(next digit = d | previous digit = prevDigit), Laplace-smoothed so a
+// sparsely-observed previous digit doesn't produce a degenerate distribution.
+function transitionProbsFor(counts, prevDigit, smoothing = 1) {
+  const row = counts[prevDigit];
+  const total = row.reduce((a, b) => a + b, 0);
+  const probs = {};
+  for (let d = 0; d <= 9; d++) probs[d] = (row[d] + smoothing) / (total + 10 * smoothing);
+  return probs;
+}
+
+// Joint counts of (digit at posA, digit at posB) occurring in the SAME draw,
+// using only draws chrono[0..uptoIndex].
+function pairJointCountsAt(chrono, uptoIndex, posA, posB) {
+  const joint = Array.from({ length: 10 }, () => new Array(10).fill(0));
+  for (let i = 0; i <= uptoIndex; i++) {
+    joint[chrono[i].digits[posA]][chrono[i].digits[posB]]++;
+  }
+  return joint;
+}
+
+// How much more (or less) often this exact digit pair has co-occurred than
+// independence would predict. >0 = appears together more than chance.
+function pairLift(joint, total, marginalA, marginalB, a, b) {
+  const observed = joint[a][b];
+  const expected = total * marginalA[a] * marginalB[b];
+  return (observed - expected) / (expected + 1); // damped so sparse cells don't blow up
+}
+
+// Blend the per-position signals into one score per digit. 0.1 = uniform baseline (1-in-10).
+function scoreDigits(stats, transProbs, weights) {
   const scores = {};
   for (let d = 0; d <= 9; d++) {
     const s = stats[d];
     const gapScore = Math.min(s.gap / 10, 3) - 1; // 0 at the expected gap of 10 draws
     scores[d] = weights.alpha * (s.recentFreq - 0.1)
               + weights.beta  * (s.overallFreq - 0.1)
-              + weights.gamma * gapScore;
+              + weights.gamma * gapScore
+              + weights.delta * (transProbs[d] - 0.1);
   }
   return scores;
 }
@@ -2262,17 +2327,41 @@ function topKDigits(scores, k) {
 }
 
 // Predict candidate numbers using only history up to and including chrono[uptoIndex].
-function predictCombosAt(chrono, uptoIndex, weights, K = CANDIDATES_PER_POS, recentWindow = RECENT_WINDOW) {
+// baseDigits is the number the transition signal is conditioned on — normally
+// chrono[uptoIndex].digits, but kept as an explicit argument so a live query
+// can condition on a manually-typed number too.
+function predictCombosAt(chrono, uptoIndex, baseDigits, weights, K = CANDIDATES_PER_POS, recentWindow = RECENT_WINDOW) {
   const posStats  = [0, 1, 2].map(pos => digitStatsAt(chrono, uptoIndex, pos, recentWindow));
-  const posScores = posStats.map(st => scoreDigits(st, weights));
+  const posTrans  = [0, 1, 2].map(pos => transitionProbsFor(transitionCountsAt(chrono, uptoIndex, pos), baseDigits[pos]));
+  const posScores = posStats.map((st, pos) => scoreDigits(st, posTrans[pos], weights));
   const posTop    = posScores.map(sc => topKDigits(sc, K));
 
   const combos = [];
   for (const a of posTop[0]) for (const b of posTop[1]) for (const c of posTop[2]) {
     combos.push({ digits: [a.digit, b.digit, c.digit], score: a.score + b.score + c.score });
   }
+
+  // Cross-position pairwise correlation: adjust (and record, for transparency)
+  // how much each candidate's specific digit pairs have historically co-occurred.
+  const total = uptoIndex + 1;
+  const marginal = posStats.map(st => {
+    const m = {};
+    for (let d = 0; d <= 9; d++) m[d] = st[d].overallFreq;
+    return m;
+  });
+  const joint01 = pairJointCountsAt(chrono, uptoIndex, 0, 1);
+  const joint12 = pairJointCountsAt(chrono, uptoIndex, 1, 2);
+  const joint02 = pairJointCountsAt(chrono, uptoIndex, 0, 2);
+  combos.forEach(c => {
+    const [d0, d1, d2] = c.digits;
+    c.pairLift = pairLift(joint01, total, marginal[0], marginal[1], d0, d1)
+               + pairLift(joint12, total, marginal[1], marginal[2], d1, d2)
+               + pairLift(joint02, total, marginal[0], marginal[2], d0, d2);
+    c.score += weights.epsilon * c.pairLift;
+  });
+
   combos.sort((x, y) => y.score - x.score);
-  return { combos, posStats, posScores, posTop };
+  return { combos, posStats, posScores, posTop, posTrans };
 }
 
 // Honest estimated probability for one candidate: the product of each digit's
@@ -2294,7 +2383,7 @@ function comboProbability(posStats, digits) {
 function backtestWeights(chrono, weights, minIndex = MIN_BACKTEST_INDEX) {
   let top1Exact = 0, top5Exact = 0, atLeast1 = 0, total = 0;
   for (let t = minIndex; t < chrono.length - 1; t++) {
-    const { combos } = predictCombosAt(chrono, t, weights);
+    const { combos } = predictCombosAt(chrono, t, chrono[t].digits, weights);
     const baseStr = chrono[t].digits.join('');
     const filtered = combos.filter(c => c.digits.join('') !== baseStr);
     const list = filtered.length ? filtered : combos;
@@ -2484,7 +2573,7 @@ function r730Predict() {
     ? r730IndexByKey.get(baseKey)
     : r730Chrono.length - 1; // fallback: use all available history
 
-  const { combos, posStats, posScores } = predictCombosAt(r730Chrono, baseIndex, r730Weights);
+  const { combos, posStats, posScores, posTrans } = predictCombosAt(r730Chrono, baseIndex, baseDigits, r730Weights);
   const baseStr = baseDigits.join('');
   const filtered = combos.filter(c => c.digits.join('') !== baseStr);
   const candidates = (filtered.length ? filtered : combos).slice(0, 10);
@@ -2500,8 +2589,9 @@ function r730Predict() {
   // Highlight the #1 pick's digits against recent real draw history
   renderHistoryGrid(baseIndex, picks[0].digits, posStats);
 
-  // Show the per-position stats behind the scoring
-  renderCalc(posStats, posScores, picks[0].digits);
+  // Show the per-position stats behind the scoring, and the pairwise correlation
+  renderCalc(posStats, posScores, posTrans, picks[0].digits);
+  renderCorrelation(baseIndex, baseDigits, picks[0]);
 
   document.getElementById('r730-output').style.display = 'block';
   document.getElementById('r730-output').scrollIntoView({ behavior:'smooth', block:'start' });
@@ -2531,6 +2621,14 @@ function renderBacktestSummary() {
       <div class="r730-bt-tile-val">${total}</div>
       <div class="r730-bt-tile-label">historical draws backtested<br>(model: ${r730BacktestInfo.name})</div>
     </div>
+  `;
+  container.innerHTML += `
+    <p class="r730-note" style="width:100%;margin-top:6px;">
+      Active weights (chosen by backtest, not fixed): recency ${r730Weights.alpha}, frequency ${r730Weights.beta},
+      due ${r730Weights.gamma}, follows-previous-number ${r730Weights.delta}, digit-pair correlation ${r730Weights.epsilon}.
+      A weight can land at 0 if that signal didn't actually improve historical hit rate for this dataset —
+      the calculation and correlation sections below still show it either way.
+    </p>
   `;
 }
 
@@ -2649,14 +2747,16 @@ function renderHistoryGrid(baseIndex, topDigits, posStats) {
   `;
 }
 
-// Per-position digit score breakdown, with the chosen digit highlighted
-function renderCalc(posStats, posScores, topDigits) {
+// Per-position digit score breakdown, with the chosen digit highlighted.
+// "Follows X%" = the transition/correlation signal — how often this digit has
+// historically followed the base number's digit at this same position.
+function renderCalc(posStats, posScores, posTrans, topDigits) {
   const container = document.getElementById('r730-calc');
   const posLabels = ['Position 1 (hundreds)', 'Position 2 (tens)', 'Position 3 (units)'];
 
   container.innerHTML = posLabels.map((label, pos) => {
     const rows = Object.entries(posScores[pos])
-      .map(([d, score]) => ({ digit: +d, score, stats: posStats[pos][+d] }))
+      .map(([d, score]) => ({ digit: +d, score, stats: posStats[pos][+d], trans: posTrans[pos][+d] }))
       .sort((a, b) => b.score - a.score)
       .slice(0, 6);
 
@@ -2666,6 +2766,7 @@ function renderCalc(posStats, posScores, topDigits) {
         <td>${(r.stats.recentFreq*100).toFixed(1)}%</td>
         <td>${(r.stats.overallFreq*100).toFixed(1)}%</td>
         <td>${r.stats.gap}</td>
+        <td>${(r.trans*100).toFixed(1)}%</td>
         <td>${r.score.toFixed(2)}</td>
       </tr>
     `).join('');
@@ -2674,12 +2775,55 @@ function renderCalc(posStats, posScores, topDigits) {
       <div class="r730-calc-pos">
         <div class="r730-calc-pos-title">${label}</div>
         <table class="r730-calc-table">
-          <thead><tr><th>Digit</th><th>Recent</th><th>All-time</th><th>Due</th><th>Score</th></tr></thead>
+          <thead><tr><th>Digit</th><th>Recent</th><th>All-time</th><th>Due</th><th>Follows</th><th>Score</th></tr></thead>
           <tbody>${rowsHtml}</tbody>
         </table>
       </div>
     `;
   }).join('');
+}
+
+// Cross-position pairwise correlation for the #1 pick: for each pair of
+// positions, how often that specific digit combination has actually occurred
+// in the same draw versus what independence would predict.
+function renderCorrelation(baseIndex, baseDigits, topPick) {
+  const container = document.getElementById('r730-correlation');
+  const total = baseIndex + 1;
+  const posStats = [0, 1, 2].map(pos => digitStatsAt(r730Chrono, baseIndex, pos, RECENT_WINDOW));
+  const marginal = posStats.map(st => {
+    const m = {};
+    for (let d = 0; d <= 9; d++) m[d] = st[d].overallFreq;
+    return m;
+  });
+  const pairs = [
+    { label: 'D1 &amp; D2', posA: 0, posB: 1 },
+    { label: 'D2 &amp; D3', posA: 1, posB: 2 },
+    { label: 'D1 &amp; D3', posA: 0, posB: 2 },
+  ];
+
+  const rows = pairs.map(p => {
+    const joint = pairJointCountsAt(r730Chrono, baseIndex, p.posA, p.posB);
+    const a = topPick.digits[p.posA], b = topPick.digits[p.posB];
+    const observedPct = (joint[a][b] / total) * 100;
+    const expectedPct = marginal[p.posA][a] * marginal[p.posB][b] * 100;
+    const lift = pairLift(joint, total, marginal[p.posA], marginal[p.posB], a, b);
+    const tag = lift > 0.15 ? 'above chance' : lift < -0.15 ? 'below chance' : 'about chance';
+    return `
+      <tr>
+        <td>${p.label} = ${a}${b}</td>
+        <td>${observedPct.toFixed(2)}%</td>
+        <td>${expectedPct.toFixed(2)}%</td>
+        <td class="r730-corr-tag ${lift > 0.15 ? 'up' : lift < -0.15 ? 'down' : ''}">${tag}</td>
+      </tr>
+    `;
+  }).join('');
+
+  container.innerHTML = `
+    <table class="r730-calc-table">
+      <thead><tr><th style="text-align:left;">Digit pair</th><th>Seen together</th><th>Expected if independent</th><th>Verdict</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
 }
 
 // switchGame handles rule730 in the original definition above — nothing extra needed here.
